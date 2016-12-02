@@ -98,7 +98,7 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
 前期准备十分麻烦。如果采取旁路抓包的方式，需要先在交换机做流镜像，并且需要在该端口进行抓包。
 wireshark需要耗费大量内存，导致程序不稳定。难以进行持久的抓包统计分析。
 无">
-<meta property="og:updated_time" content="2016-12-02T14:01:26.276Z">
+<meta property="og:updated_time" content="2016-12-02T14:07:59.880Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ntopng使用简介">
 <meta name="twitter:description" content="ntopng是什么？ntopng是一个开源的网络流量分析平台。是传统的网络监控平台ntop的新一代产品。通常我们使用wireshark抓包工具对特定的网络接口进行抓包来进行详细流量分析。但是，这样操作会有以下几个问题：
@@ -372,7 +372,7 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
 <li>ndpi    —跨平台的高层协议解析库</li>
 <li>nbox    —小型嵌入式采集系统</li>
 </ul>
-<p>我都安装了，但实际使用起来只有ntopng和nprobe有用到。ndpi已经集成在ntopng内部。其他组建并没有用到。<br>另外，二进制安装默认安装的是企业试用版，如果一段时间不激活，会降成社区版。<br>企业版的dashboard界面和社区版有所不同，并且提供了报表功能。对，社区版不含报表功能。升级企业版需要150欧元。</p>
+<p>我都安装了，但实际使用起来只有ntopng和nprobe有用到。ndpi已经集成在ntopng内部。其他组件并没有用到。<br>另外，二进制安装默认安装的是企业试用版，如果一段时间不激活，会降成社区版。<br>企业版的dashboard界面和社区版有所不同，并且提供了报表功能。对，社区版不含报表功能。升级企业版需要150欧元。</p>
 <h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>我把ntopng和nprobe装在同一台虚拟机上。nprobe做sflow采集，将结果发送到本地的zmq消息队列上，ntopng再从该队列读取信息。<br>nprobe启动参数如下:<br>    <figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">/usr/<span class="built_in">local</span>/bin/nprobe --zmq tcp://127.0.0.1:5556 -i none -n none --collector-port 6343 -b 2</div></pre></td></tr></table></figure></p>
 <p>由于ntopng参数较多，我把他们放入了配置文件中<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">-G=/var/tmp/ntopng.pid</div><div class="line">-d=/storage/ntopng</div><div class="line">-i=tcp://127.0.0.1:5556</div><div class="line">-p=/etc/ntopng/protos</div><div class="line">-F=es;ntopng;ntopng-%Y.%m.%d;http://169.24.2.96:9200/_bulk</div></pre></td></tr></table></figure></p>
 <p>配置文件中指定了pid文件位置，存储地点，需要采集的zmq队列接口，ndpi协议文件位置以及elasticsearch参数。<br>其中，比较主要的是ndpi协议文件，我们通过该文件进行协议自定义。</p>
@@ -430,6 +430,10 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/12/02/export-gpo/" rel="prev" title="将组策略导出成excel">
+                将组策略导出成excel <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -497,7 +501,7 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
         <nav class="site-state motion-element">
           <div class="site-state-item site-state-posts">
             <a href="/archives">
-              <span class="site-state-item-count">4</span>
+              <span class="site-state-item-count">5</span>
               <span class="site-state-item-name">日志</span>
             </a>
           </div>
@@ -505,7 +509,7 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
           
             <div class="site-state-item site-state-categories">
               <a href="/categories">
-                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-count">4</span>
                 <span class="site-state-item-name">分类</span>
               </a>
             </div>
@@ -514,7 +518,7 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
           
             <div class="site-state-item site-state-tags">
               <a href="/tags">
-                <span class="site-state-item-count">5</span>
+                <span class="site-state-item-count">8</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
