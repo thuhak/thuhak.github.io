@@ -68,7 +68,7 @@
 <link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="zabbix," />
+  <meta name="keywords" content="photon,vmware," />
 
 
 
@@ -84,22 +84,22 @@
 
 
 
-<meta name="description" content="昨天zabbix conf首次来到中国。规模非常小，来的好像只有zabbix的作者alex一个人。而且规模很小，也没什么宣传。我也是在浏览zabbix官方主页寻找有什么新东西的时候不小心发现的。于是就跑过去凑了个热闹。
-会议的安排只有半天，其中有一半时间是alex个人讲ppt。 第一次见到alex真人，长得很帅，有些神似郑少秋。 但是讲的东西没什么新鲜的内容。
-先说的他是怎么开始开发zabbix的">
+<meta name="description" content="缘起最近刚给vsphere升级了6.5。在6.5中内置了容器集成(VIC)功能。docker已经热了这么久了，苦于实在是没时间折腾。现在也总算找到借口换换口味。
+vmware为了降低在虚拟机中运行容器的损耗，特别定制了一个极简的并且针对vmware优化过的linux发行版-photon os。就连6.5中新的vsphere server appliance也是使用该系统的。
+这个系统里面只带了一些">
 <meta property="og:type" content="article">
-<meta property="og:title" content="zabbix conf 2016 上海站见闻">
-<meta property="og:url" content="http://yoursite.com/2016/11/17/zabbix-china-conf/index.html">
+<meta property="og:title" content="拷贝photon镜像源">
+<meta property="og:url" content="http://yoursite.com/2016/12/19/photon-mirror/index.html">
 <meta property="og:site_name" content="fightclub">
-<meta property="og:description" content="昨天zabbix conf首次来到中国。规模非常小，来的好像只有zabbix的作者alex一个人。而且规模很小，也没什么宣传。我也是在浏览zabbix官方主页寻找有什么新东西的时候不小心发现的。于是就跑过去凑了个热闹。
-会议的安排只有半天，其中有一半时间是alex个人讲ppt。 第一次见到alex真人，长得很帅，有些神似郑少秋。 但是讲的东西没什么新鲜的内容。
-先说的他是怎么开始开发zabbix的">
-<meta property="og:updated_time" content="2016-11-17T14:12:45.717Z">
+<meta property="og:description" content="缘起最近刚给vsphere升级了6.5。在6.5中内置了容器集成(VIC)功能。docker已经热了这么久了，苦于实在是没时间折腾。现在也总算找到借口换换口味。
+vmware为了降低在虚拟机中运行容器的损耗，特别定制了一个极简的并且针对vmware优化过的linux发行版-photon os。就连6.5中新的vsphere server appliance也是使用该系统的。
+这个系统里面只带了一些">
+<meta property="og:updated_time" content="2016-12-19T15:27:15.528Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="zabbix conf 2016 上海站见闻">
-<meta name="twitter:description" content="昨天zabbix conf首次来到中国。规模非常小，来的好像只有zabbix的作者alex一个人。而且规模很小，也没什么宣传。我也是在浏览zabbix官方主页寻找有什么新东西的时候不小心发现的。于是就跑过去凑了个热闹。
-会议的安排只有半天，其中有一半时间是alex个人讲ppt。 第一次见到alex真人，长得很帅，有些神似郑少秋。 但是讲的东西没什么新鲜的内容。
-先说的他是怎么开始开发zabbix的">
+<meta name="twitter:title" content="拷贝photon镜像源">
+<meta name="twitter:description" content="缘起最近刚给vsphere升级了6.5。在6.5中内置了容器集成(VIC)功能。docker已经热了这么久了，苦于实在是没时间折腾。现在也总算找到借口换换口味。
+vmware为了降低在虚拟机中运行容器的损耗，特别定制了一个极简的并且针对vmware优化过的linux发行版-photon os。就连6.5中新的vsphere server appliance也是使用该系统的。
+这个系统里面只带了一些">
 
 
 
@@ -127,13 +127,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2016/11/17/zabbix-china-conf/"/>
+  <link rel="canonical" href="http://yoursite.com/2016/12/19/photon-mirror/"/>
 
 
 
 
 
-  <title> zabbix conf 2016 上海站见闻 | fightclub </title>
+  <title> 拷贝photon镜像源 | fightclub </title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -254,7 +254,7 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/11/17/zabbix-china-conf/">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/12/19/photon-mirror/">
 
   <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
     <meta itemprop="name" content="thuhak">
@@ -278,7 +278,7 @@
             
             
               
-                zabbix conf 2016 上海站见闻
+                拷贝photon镜像源
               
             
           </h1>
@@ -291,8 +291,8 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2016-11-17T20:29:24+08:00">
-                2016-11-17
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2016-12-19T21:28:50+08:00">
+                2016-12-19
               </time>
             
 
@@ -345,13 +345,18 @@
       
 
       
-        <p>昨天zabbix conf首次来到中国。规模非常小，来的好像只有zabbix的作者alex一个人。<br>而且规模很小，也没什么宣传。我也是在浏览zabbix官方主页寻找有什么新东西的时候不小心发现的。于是就跑过去凑了个热闹。</p>
-<p>会议的安排只有半天，其中有一半时间是alex个人讲ppt。 第一次见到alex真人，长得很帅，有些神似郑少秋。 但是讲的东西没什么新鲜的内容。</p>
-<p>先说的他是怎么开始开发zabbix的。好像是在98年开始写第一行代码，那时候他在银行上班，做系统管理员，管些数据库之类的。觉得管起来特麻烦，就决定自己搞个平台。用下班和周末的时间弄弄，结果一不小心就越弄越大。最后干脆把工作辞了，专心写zabbix。一开始只有一个人，到后来周围也围绕了45个小伙伴。工作室也开到了日本和纽约。听起来和其他传奇故事差不多。</p>
-<p>然后在介绍了下zabbix的大致功能。这其实也没啥好说的。</p>
-<p>最后一帮子国内的几个做周边的厂商上来推广自己的产品后就结束。</p>
-<p>会议中比较重要的信息就是alex明确表示会掌控zabbix所有的核心代码,以及产品方向。这也是为什么zabbix不参与资本运作，也不使用github接受其第三方提供的代码。这个想法很好理解,换我估计也会这样做。</p>
-<p>期间我也问了几个问题。只是我对自己的英文比较没信心，让其他人帮忙翻译。<br>其中比较主要的就是我觉着很多时候二维的时间序列能够提供的信息是有限的。最好还能有类似es这种可以使用其他维度进行聚合的方法。以及act最好能有类似基于事件的交互机制。<br>其他也有人问到zabbix是否能够提供事务追踪以及更为丰富的api。<br>其实很多解决问题的关键点都差不多，就是history存储的设计太为简陋。如果要想有本质上的功能进步，必须操刀大改才行。</p>
+        <h3 id="缘起"><a href="#缘起" class="headerlink" title="缘起"></a>缘起</h3><p>最近刚给vsphere升级了6.5。在6.5中内置了容器集成(VIC)功能。docker已经热了这么久了，苦于实在是没时间折腾。现在也总算找到借口换换口味。</p>
+<p>vmware为了降低在虚拟机中运行容器的损耗，特别定制了一个极简的并且针对vmware优化过的linux发行版-photon os。就连6.5中新的vsphere server appliance也是使用该系统的。</p>
+<p>这个系统里面只带了一些最基本的工具和命令，其他工具通过内置了一个yum兼容的包管理器tdnf来从vmware的官方源下载。因为我司的特别情况，内外网不能互联,或者说不能直接联通,只能再想办法。</p>
+<h3 id="最初的想法"><a href="#最初的想法" class="headerlink" title="最初的想法"></a>最初的想法</h3><p>最开始的想法很简单，在通往外部的临界服务器使用wget将整个静态网站的内容都下载下来。再通过web服务器把内容放出来，把photon下面的软件源的内容都替换成自己的web服务器就可以了。</p>
+<p>试了下居然只下载了几个index.html。把robots检查关闭了还是如此。仔细看了下报错信息。原来是对面的源为了防止网页爬虫，使用:代替了/，再使用js在点击的时候将:替换回来。好吧，算你厉害。只能换个办法。</p>
+<h3 id="要不使用反向代理"><a href="#要不使用反向代理" class="headerlink" title="要不使用反向代理?"></a>要不使用反向代理?</h3><p>其实这并不是个好办法，因为公司的环境比较忌讳。但是偶尔试试看总还是可以的。<br>不过出人意料的还是失败。我几经确认链接无误，但是就是404。我对nginx玩的还不是很6,也许是某个地方出了我不知道的问题。而且nginx的debug级别日志只有error才有，看起来也是没什么作用。</p>
+<p>这种时候，只能想要万能的办法，用tshark把数据包截获下来再分析。结果数据拿到手才想起来是https加密数据。只有拥有会话密钥才能够读取数据的内容。问题是怎么拿到nginx转发时候的会话密钥呢？查看其中openssl部分的代码也许是个主意，不过有点小题大作。事情实在太多，没时间浪费在这个上面。也许自己写爬虫把网站down下来会更快一点。</p>
+<h3 id="再换个办法"><a href="#再换个办法" class="headerlink" title="再换个办法"></a>再换个办法</h3><p>我之前用过pyquery，就是python版本的jquery。现在想换个scrapy用用。毕竟现成的爬虫框架会更简单一点。虽然有一定的学习曲线，但是说不定以后还能用上。现在唯一的问题就是如何处理js部分。如果图简单，我可以直接进行手工转换，这样的话只要对方每次更换js我就必须跟在后面重写爬虫，有点蠢。或者python直接解析js后在进行爬虫。据我所知,photomjs就可以做这样的事情。我可以通过selenium和phtomjs再结合scrapy来做。看scrapy的文档，似乎可以通过更换download中间件来实现这个。老实说，我特别讨厌框架。因为虽然很少的代码就能解决问题，但是需要太长的学习曲线了解这些东西的结构。如果没有说明手册，感觉简直糟糕至极。只能通过对自己进行心理暗示，这玩意以后说不定什么时候还用的上做安慰。</p>
+<p>可是，我明明不是一个搞前端的啊！唉，不管怎么样，先开工吧。</p>
+<h3 id="柳暗花明"><a href="#柳暗花明" class="headerlink" title="柳暗花明"></a>柳暗花明</h3><p>正当我在浏览器用F12打开开发者工具准备进行页面检查的时候，奇迹发生了。不知道什么原因，js的部分不见了，页面又变回了普通的html。我不知道发生了什么事，也许有我不知道的事情在发生作用。不过这样一来，wget就又能使用了。果然再使用wget，下载就正常了。</p>
+<h3 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h3><p>很多时候，无论生活还是工作，就像这样，充满了不顺利和不确定性。这些不确定性让人为了一点鸡毛蒜皮的破事绞尽脑汁。如果硬要说能从中学到点什么的话，就是再次知道自己既无知，又愚蠢。这么多年过去了，不管又学会了多少东西，这种无力感始终伴随左右。</p>
+<p>photon的镜像暂时搭好了，里面居然还包含了gcc编译器。也许我可以把zabbix客户端编译好放到photon里。md，还得去找header。</p>
 
       
     </div>
@@ -375,7 +380,9 @@
       
         <div class="post-tags">
           
-            <a href="/tags/zabbix/" rel="tag"># zabbix</a>
+            <a href="/tags/photon/" rel="tag"># photon</a>
+          
+            <a href="/tags/vmware/" rel="tag"># vmware</a>
           
         </div>
       
@@ -384,15 +391,15 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
+              <a href="/2016/12/02/export-gpo/" rel="next" title="将组策略导出成excel">
+                <i class="fa fa-chevron-left"></i> 将组策略导出成excel
+              </a>
+            
           </div>
 
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2016/11/21/bplustree/" rel="prev" title="b树和b+树">
-                b树和b+树 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -439,8 +446,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview sidebar-panel sidebar-panel-active">
+      <section class="site-overview sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
           <img class="site-author-image" itemprop="image"
                src="/images/avatar.jpg"
@@ -493,6 +509,22 @@
 
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#缘起"><span class="nav-number">1.</span> <span class="nav-text">缘起</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#最初的想法"><span class="nav-number">2.</span> <span class="nav-text">最初的想法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#要不使用反向代理"><span class="nav-number">3.</span> <span class="nav-text">要不使用反向代理?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#再换个办法"><span class="nav-number">4.</span> <span class="nav-text">再换个办法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#柳暗花明"><span class="nav-number">5.</span> <span class="nav-text">柳暗花明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#经验总结"><span class="nav-number">6.</span> <span class="nav-text">经验总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
     </div>
