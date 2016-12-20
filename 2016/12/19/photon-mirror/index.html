@@ -94,7 +94,7 @@ vmware为了降低在虚拟机中运行容器的损耗，特别定制了一个�
 <meta property="og:description" content="缘起最近刚给vsphere升级了6.5。在6.5中内置了容器集成(VIC)功能。docker已经热了这么久了，苦于实在是没时间折腾。现在也总算找到借口换换口味。
 vmware为了降低在虚拟机中运行容器的损耗，特别定制了一个极简的并且针对vmware优化过的linux发行版-photon os。就连6.5中新的vsphere server appliance也是使用该系统的。
 这个系统里面只带了一些">
-<meta property="og:updated_time" content="2016-12-19T15:27:15.528Z">
+<meta property="og:updated_time" content="2016-12-20T11:43:41.688Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="拷贝photon镜像源">
 <meta name="twitter:description" content="缘起最近刚给vsphere升级了6.5。在6.5中内置了容器集成(VIC)功能。docker已经热了这么久了，苦于实在是没时间折腾。现在也总算找到借口换换口味。
@@ -357,6 +357,7 @@ vmware为了降低在虚拟机中运行容器的损耗，特别定制了一个�
 <h3 id="柳暗花明"><a href="#柳暗花明" class="headerlink" title="柳暗花明"></a>柳暗花明</h3><p>正当我在浏览器用F12打开开发者工具准备进行页面检查的时候，奇迹发生了。不知道什么原因，js的部分不见了，页面又变回了普通的html。我不知道发生了什么事，也许有我不知道的事情在发生作用。不过这样一来，wget就又能使用了。果然再使用wget，下载就正常了。</p>
 <h3 id="经验总结"><a href="#经验总结" class="headerlink" title="经验总结"></a>经验总结</h3><p>很多时候，无论生活还是工作，就像这样，充满了不顺利和不确定性。这些不确定性让人为了一点鸡毛蒜皮的破事绞尽脑汁。如果硬要说能从中学到点什么的话，就是再次知道自己既无知，又愚蠢。这么多年过去了，不管又学会了多少东西，这种无力感始终伴随左右。</p>
 <p>photon的镜像暂时搭好了，里面居然还包含了gcc编译器。也许我可以把zabbix客户端编译好放到photon里。md，还得去找header。</p>
+<h3 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h3><p>wget下载好以后，发现有些文件好像没有。单独找一个文件下了一下。发现是跳转到其他下载域名后文件名过长引起的。这也是为什么反向代理404的原因。其实早该想到的，间歇性智商降低。最后的做法还是最简单的把index下下来用pyquery解析后直接传给wget下载，懒得折腾了。</p>
 
       
     </div>
@@ -519,7 +520,7 @@ vmware为了降低在虚拟机中运行容器的损耗，特别定制了一个�
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#缘起"><span class="nav-number">1.</span> <span class="nav-text">缘起</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#最初的想法"><span class="nav-number">2.</span> <span class="nav-text">最初的想法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#要不使用反向代理"><span class="nav-number">3.</span> <span class="nav-text">要不使用反向代理?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#再换个办法"><span class="nav-number">4.</span> <span class="nav-text">再换个办法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#柳暗花明"><span class="nav-number">5.</span> <span class="nav-text">柳暗花明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#经验总结"><span class="nav-number">6.</span> <span class="nav-text">经验总结</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#缘起"><span class="nav-number">1.</span> <span class="nav-text">缘起</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#最初的想法"><span class="nav-number">2.</span> <span class="nav-text">最初的想法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#要不使用反向代理"><span class="nav-number">3.</span> <span class="nav-text">要不使用反向代理?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#再换个办法"><span class="nav-number">4.</span> <span class="nav-text">再换个办法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#柳暗花明"><span class="nav-number">5.</span> <span class="nav-text">柳暗花明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#经验总结"><span class="nav-number">6.</span> <span class="nav-text">经验总结</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#后续"><span class="nav-number">7.</span> <span class="nav-text">后续</span></a></li></ol></div>
             
 
           </div>
