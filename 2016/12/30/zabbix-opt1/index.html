@@ -1,0 +1,695 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="postgre,zabbix," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="最近经常发现zabbix的dashbord的最近20个问题以及系统状态的刷新偶尔会多几秒延时，圈圈转啊转，让人很不爽，于是决定折腾一下。
+最开始着手的就是数据库。
+系统参数调整最初的时候我把postgre中的fsync关闭，并且将数据最为庞大的各个history和trends的分区改成了unlogged模式。效果非常明显。
+那么下一步就是对一些常规的系统参数进行精细调整,毕竟很多都是简单有效的方法">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一次zabbix前端优化调整">
+<meta property="og:url" content="http://yoursite.com/2016/12/30/zabbix-opt1/index.html">
+<meta property="og:site_name" content="fightclub">
+<meta property="og:description" content="最近经常发现zabbix的dashbord的最近20个问题以及系统状态的刷新偶尔会多几秒延时，圈圈转啊转，让人很不爽，于是决定折腾一下。
+最开始着手的就是数据库。
+系统参数调整最初的时候我把postgre中的fsync关闭，并且将数据最为庞大的各个history和trends的分区改成了unlogged模式。效果非常明显。
+那么下一步就是对一些常规的系统参数进行精细调整,毕竟很多都是简单有效的方法">
+<meta property="og:updated_time" content="2016-12-30T17:12:22.380Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="一次zabbix前端优化调整">
+<meta name="twitter:description" content="最近经常发现zabbix的dashbord的最近20个问题以及系统状态的刷新偶尔会多几秒延时，圈圈转啊转，让人很不爽，于是决定折腾一下。
+最开始着手的就是数据库。
+系统参数调整最初的时候我把postgre中的fsync关闭，并且将数据最为庞大的各个history和trends的分区改成了unlogged模式。效果非常明显。
+那么下一步就是对一些常规的系统参数进行精细调整,毕竟很多都是简单有效的方法">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2016/12/30/zabbix-opt1/"/>
+
+
+
+
+
+  <title> 一次zabbix前端优化调整 | fightclub </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">fightclub</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle">dont talk about it</p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/12/30/zabbix-opt1/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="thuhak">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.jpg">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="fightclub">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="fightclub" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                一次zabbix前端优化调整
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2016-12-30T22:31:28+08:00">
+                2016-12-30
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>最近经常发现zabbix的dashbord的最近20个问题以及系统状态的刷新偶尔会多几秒延时，圈圈转啊转，让人很不爽，于是决定折腾一下。</p>
+<p>最开始着手的就是数据库。</p>
+<h2 id="系统参数调整"><a href="#系统参数调整" class="headerlink" title="系统参数调整"></a>系统参数调整</h2><p>最初的时候我把postgre中的fsync关闭，并且将数据最为庞大的各个history和trends的分区改成了unlogged模式。效果非常明显。</p>
+<p>那么下一步就是对一些常规的系统参数进行精细调整,毕竟很多都是简单有效的方法。</p>
+<h3 id="文件系统调整"><a href="#文件系统调整" class="headerlink" title="文件系统调整"></a>文件系统调整</h3><p>之前不知道看过哪个评测报告，说对于随机读写，ext3是要超过ext4的。虽然不知道真假，但是还是秉着宁可信其有的方式使用了的ext3分区。</p>
+<p>对于文件系统最常见的优化就是关闭atime模式和设置更快的日志模式。</p>
+<p>开启atime功能意味着在读取数据的时候也会造成inode的刷新，而inode的刷新也会带来文件系统日志的变更。而atime一般来说是没多大作用，关闭atime也不会出现什么不良反应，属于首先开刀的地方。</p>
+<p>其次是日志模式。默认的ordered方式即使先写用户数据再写元数据的模式，也就是和windows一样。当然也有更慢的更安全的journal模式和更快却没那么安全的writeback模式。我的做法是把history和trends单独的表空间采取writeback模式，也算是一种折中。当然也可以完全关闭日志，不过这就太过分了。</p>
+<p>再次是关闭jdb barrier。按照ext3 manpage的说法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">barrier=0 / barrier=1</div><div class="line"></div><div class="line">This disables / enables the use of write barriers in the jbd code.</div><div class="line">barrier=0 disables, barrier=1 enables (default).</div><div class="line">This also requires an IO stack which can support barriers,</div><div class="line">and  if jbd  gets  an  error  on  a barrier write,</div><div class="line">it will disable barriers again with a warning.  </div><div class="line">Write barriers enforce proper on-disk ordering of journal commits,</div><div class="line">making volatile disk write caches safe to use,</div><div class="line">at some performance penalty.  </div><div class="line">If your disks are battery-backed in one way or another,</div><div class="line">disabling barriers may safely improve performance.</div></pre></td></tr></table></figure>
+<p>jdb barrier确保日志的提交顺序。如果磁盘的有电源的，可以关闭以提高性能。<br>对于使用阵列存储的我来说，这个应该不必担心，关闭即可。</p>
+<p>另外，文件系统的块大小应该也是会存在影响的。因为数据库的页面以8K为基本单位，而文件系统默认以4K为基本单位。按照直觉的，应该是修改成一致性应该会好一些。不过没亲测过，就暂缓调整了。</p>
+<h3 id="内核调整"><a href="#内核调整" class="headerlink" title="内核调整"></a>内核调整</h3><p>对于数据库来讲，内存的调整应该是最为主要的。</p>
+<p>为了防止页面换出，我直接禁用了交换分区。把后台的pdflush脏页回写频度调高以优化可能的fsync造成的性能影响。实际上，我应该先用strace统计一下。这个地方可以mark一下，有空再试。</p>
+<p>对于postgre文档中建议的共享内存段以及信号量的调整，我现在没看到有什么问题，就没去调整。</p>
+<p>最后，我将postgre的shard buffer的内存页面大小修改成2M的大页面。理论上讲，减少页面的数量能增加TLB的命中率，更高效的利用cpu缓存。对于数据库这种需要大块分配内存的应用来讲是有利的。</p>
+<p>我的数据库内存是16G，按照官方文档中建议的方法将postgre共享内存设置成所有内存的1/4。也就是4G,其他部分用作操作系统的透明文件缓存。因为还有一些零碎的内存，所以整体需要的大页面数量，会比4G更多一些。</p>
+<p>官方文档中的建议的方法是取master进程统计的vm峰值, 即:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">cat /proc/$(head -1 /data/postmaster.pid)/status | grep -i vmpeak</div></pre></td></tr></table></figure></p>
+<p>再除以页面大小，即:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">grep -i hugepagesize /etc/meminfo</div></pre></td></tr></table></figure></p>
+<p>得到的值就是nr_hugepages的值。</p>
+<p>另外，官方文档还建议关闭操作系统的透明大页面功能。并将postgre的大页面设置成on，这样就可以让postgre独享大页面了。</p>
+<p>我做了一个systemd一次性启动服务来实现这个需求。虽然直接用rc.local的方式更为简单，但是systemd不建议继续使用rc.local，就按照新标准来吧。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#!/usr/bin/env sh</span></div><div class="line"></div><div class="line"><span class="comment"># 禁用透明大页面</span></div><div class="line"></div><div class="line"><span class="built_in">echo</span> never &gt; /sys/kernel/mm/transparent_hugepage/enabled</div><div class="line"><span class="built_in">echo</span> never &gt; /sys/kernel/mm/transparent_hugepage/defrag</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Description = Disable transparent huge page</div><div class="line">ConditionPathExists = /sys/kernel/mm/transparent_hugepage/enabled</div><div class="line">ConditionPathExists = /sys/kernel/mm/transparent_hugepage/defrag</div><div class="line">Before = postgresql.service</div><div class="line"></div><div class="line">[Service]</div><div class="line">ExecStart = /usr/sbin/disable_tran_huge_page.sh</div><div class="line">Type = oneshot</div><div class="line">RemainAfterExit = yes</div><div class="line"></div><div class="line">[Install]</div><div class="line">WantedBy=multi-user.target</div></pre></td></tr></table></figure>
+<h3 id="表索引调整"><a href="#表索引调整" class="headerlink" title="表索引调整"></a>表索引调整</h3><p>把基础环境调整后，开始进入正题。调整具体的功能还是要从最直接的地方开刀。也就是找到两个功能卡的对应的表和sql。</p>
+<p>表很容易猜，而sql除了查找php的源代码，其实还有更简单的方法。</p>
+<p>在postgre中，可以使用pg_stat_statements插件，对sql的执行情况进行统计。把统计视图中调用次数最多的10个sql拉出来看看，就能查到是哪个sql有问题了。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">select</span> * <span class="keyword">from</span> pg_stat_statements <span class="keyword">order</span> <span class="keyword">by</span> calls <span class="keyword">desc</span> <span class="keyword">limit</span> <span class="number">10</span>;</div></pre></td></tr></table></figure>
+<p>果然，排名第一的就是events表。语句模板为<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">select</span> eventid,<span class="keyword">source</span>,object.objectid,clock,<span class="keyword">value</span>,acknowledged,ns <span class="keyword">from</span> <span class="keyword">events</span> <span class="keyword">where</span> eventid = ?</div></pre></td></tr></table></figure></p>
+<p>最慢的执行时间为7051ms，简直弱爆了。</p>
+<p>这张表的eventid为主键，有个默认的btree索引，但是是非聚集的。</p>
+<p>因为可以想象的是，这个搜索的条件带有明显的聚集特性。因此，把整个表改成按照eventid进行聚集索引，是个不错的主意。为了验证这个结论，我在测试服务器上插入了1000w的模拟数据并且用pgbench进行测试，1000w行的数据在集中搜索100行数据的情况下聚集索引大概快了20%,效果还是挺明显的。</p>
+<p>postgre中的聚集索引创建方法为<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">cluster events using events_pkey;</div></pre></td></tr></table></figure></p>
+<p>注意运行完cluster后要使用analyze进行重新统计，否则规划器会生成非常差劲的执行计划。<br>另外，需要定期运行cluster命令以更新聚集索引。</p>
+<h3 id="尾声"><a href="#尾声" class="headerlink" title="尾声"></a>尾声</h3><p>一番折腾，不知道是不是心理作用，感觉似乎快了一些。下一步可以折腾一下php。也许可以换个php 7试试看。</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/postgre/" rel="tag"># postgre</a>
+          
+            <a href="/tags/zabbix/" rel="tag"># zabbix</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/12/19/photon-mirror/" rel="next" title="拷贝photon镜像源">
+                <i class="fa fa-chevron-left"></i> 拷贝photon镜像源
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.jpg"
+               alt="thuhak" />
+          <p class="site-author-name" itemprop="name">thuhak</p>
+          <p class="site-description motion-element" itemprop="description"></p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">7</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">4</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">11</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#系统参数调整"><span class="nav-number">1.</span> <span class="nav-text">系统参数调整</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#文件系统调整"><span class="nav-number">1.1.</span> <span class="nav-text">文件系统调整</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#内核调整"><span class="nav-number">1.2.</span> <span class="nav-text">内核调整</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#表索引调整"><span class="nav-number">1.3.</span> <span class="nav-text">表索引调整</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#尾声"><span class="nav-number">1.4.</span> <span class="nav-text">尾声</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">thuhak</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+  
+  
+
+  
+  
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for (i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+      });
+    </script>
+    <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  
+
+
+  
+
+  
+
+  
+
+
+</body>
+</html>
