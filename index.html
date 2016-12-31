@@ -297,6 +297,24 @@
           </span>
 
           
+            <span class="post-category" >
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据库/" itemprop="url" rel="index">
+                    <span itemprop="name">数据库</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
 
           
             
@@ -342,7 +360,7 @@
 <p>最后，我将postgre的shard buffer的内存页面大小修改成2M的大页面。理论上讲，减少页面的数量能增加TLB的命中率，更高效的利用cpu缓存。对于数据库这种需要大块分配内存的应用来讲是有利的。</p>
 <p>我的数据库内存是16G，按照官方文档中建议的方法将postgre共享内存设置成所有内存的1/4。也就是4G,其他部分用作操作系统的透明文件缓存。因为还有一些零碎的内存，所以整体需要的大页面数量，会比4G更多一些。</p>
 <p>官方文档中的建议的方法是取master进程统计的vm峰值, 即:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">cat /proc/$(head -1 /data/postmaster.pid)/status | grep -i vmpeak</div></pre></td></tr></table></figure></p>
-<p>再除以页面大小，即:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">grep -i hugepagesize /etc/meminfo</div></pre></td></tr></table></figure></p>
+<p>再除以页面大小，即:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">grep -i hugepagesize /proc/meminfo</div></pre></td></tr></table></figure></p>
 <p>得到的值就是nr_hugepages的值。</p>
 <p>另外，官方文档还建议关闭操作系统的透明大页面功能。并将postgre的大页面设置成on，这样就可以让postgre独享大页面了。</p>
 <p>我做了一个systemd一次性启动服务来实现这个需求。虽然直接用rc.local的方式更为简单，但是systemd不建议继续使用rc.local，就按照新标准来吧。</p>
@@ -1373,7 +1391,7 @@
           
             <div class="site-state-item site-state-categories">
               <a href="/categories">
-                <span class="site-state-item-count">4</span>
+                <span class="site-state-item-count">5</span>
                 <span class="site-state-item-name">分类</span>
               </a>
             </div>
