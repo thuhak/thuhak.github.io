@@ -1,0 +1,20 @@
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Hexo version: \u001b[35m3.2.2\u001b[39m","time":"2019-02-06T14:43:00.734Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Working directory: \u001b[35m~/Documents/fightclub/\u001b[39m","time":"2019-02-06T14:43:00.736Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Config loaded: \u001b[35m~/Documents/fightclub/_config.yml\u001b[39m","time":"2019-02-06T14:43:00.821Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Plugin loaded: \u001b[35mhexo-deployer-git\u001b[39m","time":"2019-02-06T14:43:00.835Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Plugin loaded: \u001b[35mhexo-generator-archive\u001b[39m","time":"2019-02-06T14:43:00.837Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Plugin loaded: \u001b[35mhexo-generator-category\u001b[39m","time":"2019-02-06T14:43:00.839Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Plugin loaded: \u001b[35mhexo-generator-index\u001b[39m","time":"2019-02-06T14:43:00.840Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Plugin loaded: \u001b[35mhexo-renderer-ejs\u001b[39m","time":"2019-02-06T14:43:00.842Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Plugin loaded: \u001b[35mhexo-generator-tag\u001b[39m","time":"2019-02-06T14:43:00.843Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Plugin loaded: \u001b[35mhexo-server\u001b[39m","time":"2019-02-06T14:43:00.905Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Script loaded: \u001b[35mthemes/next/scripts/merge-configs.js\u001b[39m","time":"2019-02-06T14:43:00.906Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Plugin loaded: \u001b[35mhexo-renderer-marked\u001b[39m","time":"2019-02-06T14:43:00.911Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Script loaded: \u001b[35mthemes/next/scripts/tags/full-image.js\u001b[39m","time":"2019-02-06T14:43:00.912Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Plugin loaded: \u001b[35mhexo-renderer-stylus\u001b[39m","time":"2019-02-06T14:43:00.913Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Script loaded: \u001b[35mthemes/next/scripts/tags/center-quote.js\u001b[39m","time":"2019-02-06T14:43:00.913Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Script loaded: \u001b[35mthemes/next/scripts/tags/note.js\u001b[39m","time":"2019-02-06T14:43:00.913Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":20,"msg":"Script loaded: \u001b[35mthemes/next/scripts/tags/group-pictures.js\u001b[39m","time":"2019-02-06T14:43:00.914Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":30,"msg":"Deploying: \u001b[35mgit\u001b[39m","time":"2019-02-06T14:43:00.916Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":30,"msg":"Clearing .deploy_git folder...","time":"2019-02-06T14:43:00.922Z","v":0}
+{"name":"hexo","hostname":"matrix.local","pid":39184,"level":30,"msg":"Copying files from public folder...","time":"2019-02-06T14:43:00.965Z","v":0}
