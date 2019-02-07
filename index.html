@@ -251,6 +251,207 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/07/saltstack2/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="thuhak">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.jpg">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="fightclub">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="fightclub" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                
+                <a class="post-title-link" href="/2019/02/07/saltstack2/" itemprop="url">
+                  saltstack中的设计模式(二)
+                </a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-07T08:19:28+08:00">
+                2019-02-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/saltstack/" itemprop="url" rel="index">
+                    <span itemprop="name">saltstack</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>在<a href="https://thuhak.github.io/2019/02/06/saltstack1/" target="_blank" rel="external">上一篇</a>文章中，<br>我用一个了案例展示了如何将外部系统的数据应用引入到salt里面，<br>以及通过自开发state扩展的方式实现底层逻辑，并用sls实现业务逻辑。</p>
+<p>这次，我们将举例说明在涉及与外部系统进行数据交互的时候，如何利用salt对外部系统进行数据更新。</p>
+<p>接下来就进入今天的案例</p>
+<h3 id="自动维护主机在jumpserver中的数据"><a href="#自动维护主机在jumpserver中的数据" class="headerlink" title="自动维护主机在jumpserver中的数据"></a>自动维护主机在jumpserver中的数据</h3><p>jumpserver，就是所谓的跳板机。普通用户在申请好自己的服务器后，可以通过跳板机登陆自己的系统。<br>跳板机上面实现了很多安全逻辑，用以实现隔离与命令审计等功能。</p>
+<p>这次的任务，我们需要做到以下几点：</p>
+<ul>
+<li>能够将主机的信息自动的注册进jumpserver，在主机数据变更的时候，也能进行数据更新</li>
+<li>在主机删除的时候，jumpserver的数据也能得到删除</li>
+</ul>
+<p>首先，我们设想一下各种方案的可行性。我们可以采取如下的方案中的一种：</p>
+<ol>
+<li>使用pillar + py renderer的方式update数据</li>
+<li>自定义一个execution module， 并使用salt调度器周期性执行</li>
+<li>自定义一个state module，把主要的逻辑写在module中，用sls去调用</li>
+<li>使用sls调用写好的外部程序</li>
+</ol>
+<p>对于第一种方案，我们已经在上一篇文章中使用过，既然渲染器能执行python代码，也能够直接执行update操作。但是问题在于在pillar的渲染器中，我们没办法动态的引用其他pillar里面的数据。这涉及到salt核心部分的执行逻辑。我们这次需要将aws pillar中获得的数据一部分导入到jumpserver中。因此不能同样的采用pillar渲染器去执行。</p>
+<p>剩下的三种方案中，我更倾向在扩展的module中实现底层功能，把业务逻辑放置在sls中。底层module就像乐高积木的每一个单元，<br>而业务逻辑，就是把这些积木组装在一起。除了可读性以外，对于业务逻辑来说，主要要面对的问题在于经常的会变更，把业务逻辑写在扩展中，<br>需要将服务器端的module重新同步到客户端才能生效，而sls是实时生效且更轻量级，更适合快速开发的场景。基于这个考虑，最后一个方案更为合适。</p>
+<p>接下来，我们可以考虑的实现方式是把对接jumpserver的api写在scripts中， 在sls中使用cmd.run去调用。但是最大的问题在于如何有效的进行安全隔离，让每个minion只能更新自己的数据，不能获得其他minion的数据，这会形成安全隐患。如果jumpserver 的api本身实现不了这些功能，那么可能需要重新做一个api server，<br>对jumpserver的api进行封装，实现安全的逻辑。这是可行的，虽然比较麻烦。</p>
+<p>我们这边文章主要是基于salt现有的组件，所以肯定是以通过salt实现为最优先选择。条条大路通罗马，但是我们只选择最快捷的方式。</p>
+<p>最后我决定采用的方式是使用sls + event -&gt; reactor -&gt; runner来实现这个功能</p>
+<p>步骤如下：</p>
+<h4 id="编写salt-runner用来对接jumpserver-api"><a href="#编写salt-runner用来对接jumpserver-api" class="headerlink" title="编写salt runner用来对接jumpserver api"></a>编写salt runner用来对接jumpserver api</h4><p>salt runner是在服务端执行的python程序，salt把runner中的某一个函数映射到salt的一组调用，并能够和salt的其他组件联动。<br>开发者几乎减去了所有不必要的代码，只需要关注业务逻辑即可。</p>
+<p>因为涉及到业务逻辑，我将代码隐藏起来，只写了基本的逻辑。</p>
+<p>runner的路径需要单独在master配置文件进行配置，需要注意的是，对于不需要使用 fileserver的，也就是通过salt://xx暴露出来的文件，<br>都不要放在salt fileserver的路径下面，避免出现安全上的隐患。</p>
+<p><code>/srv/_runners/jumpserver.py</code></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_host</span><span class="params">(hostname, ipaddress, port=<span class="number">22</span>, other_info=None)</span>:</span></div><div class="line">    <span class="string">'''</span></div><div class="line">    add host to jumpserver</div><div class="line">    '''</div><div class="line">    ret = &#123;<span class="string">'result'</span>: <span class="keyword">True</span>, <span class="string">'retcode'</span>: <span class="number">0</span>, <span class="string">'comment'</span>: <span class="string">''</span>&#125;</div><div class="line">    <span class="keyword">return</span> ret</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_host</span><span class="params">(hostname=None, ipaddress=None)</span>:</span></div><div class="line">    <span class="string">'''</span></div><div class="line">    get host from jumpserver</div><div class="line">    '''</div><div class="line">    ret = &#123;<span class="string">'result'</span>: <span class="keyword">True</span>, <span class="string">'retcode'</span>: <span class="number">0</span>, <span class="string">'comment'</span>: <span class="string">''</span>&#125;</div><div class="line">    <span class="keyword">return</span> ret</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">remove_host</span><span class="params">(hostname)</span>:</span></div><div class="line">    <span class="string">'''</span></div><div class="line">    remove host from jumpserver</div><div class="line">    '''</div><div class="line">    ret = &#123;<span class="string">'result'</span>: <span class="keyword">True</span>, <span class="string">'retcode'</span>: <span class="number">0</span>, <span class="string">'comment'</span>: <span class="string">''</span>&#125;</div><div class="line">    <span class="keyword">return</span> ret</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">reset_host</span><span class="params">(ipaddress, other_info=None)</span>:</span></div><div class="line">    <span class="string">'''</span></div><div class="line">    reset jumpserver information</div><div class="line">    '''</div><div class="line">    ret = &#123;<span class="string">'result'</span>: <span class="keyword">True</span>, <span class="string">'retcode'</span>: <span class="number">0</span>, <span class="string">'comment'</span>: <span class="string">''</span>&#125;</div><div class="line">    <span class="keyword">return</span> ret</div></pre></td></tr></table></figure>
+<p>runner函数写好以后，可以通过<code>salt-run module.function [args]</code>的方式来直接调用写好的runner</p>
+<h4 id="编写pillar，让客户端拿到jumpserver服务器的信息"><a href="#编写pillar，让客户端拿到jumpserver服务器的信息" class="headerlink" title="编写pillar，让客户端拿到jumpserver服务器的信息"></a>编写pillar，让客户端拿到jumpserver服务器的信息</h4><p>和上一篇文章中用到的方法是一样的。<br>不过有一个问题特别值得注意，就是在缓存中我们选择了主机的ip地址为主键，这是因为对于我们的场景，<br>主机名变更的比ip地址更换的更加频繁。</p>
+<p>而对于salt来说，我们使用主机名称作为主键。我们对主机名称使用了特别的编码，让主机名称包含有结构化信息。<br>方便salt进行定位。</p>
+<p>主键不同，需要付出很多额外的代码。因此在设计主键时，要全方面的考虑到各种情况。</p>
+<p><code>/srv/pillar/jumpserver/init.sls</code></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#!py</span></div><div class="line"></div><div class="line"><span class="keyword">try</span>:</div><div class="line">    <span class="keyword">from</span> redis_cache <span class="keyword">import</span> *</div><div class="line">    cache = SimpleCache(<span class="number">50000</span>, expire=<span class="number">7200</span>, namespace=<span class="string">'jumpserver'</span>)</div><div class="line">    HAS_CACHE = <span class="keyword">True</span></div><div class="line"><span class="keyword">except</span>:</div><div class="line">    HAS_CACHE = <span class="keyword">False</span></div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">run</span><span class="params">()</span>:</span></div><div class="line">    ret = &#123;&#125;</div><div class="line">    ip = [ip <span class="keyword">for</span> ip <span class="keyword">in</span> __grains__[<span class="string">'ipv4'</span>] <span class="keyword">if</span> ip.startswith(<span class="string">"10."</span>)][<span class="number">0</span>]</div><div class="line">    <span class="keyword">try</span>:</div><div class="line">        ret = cache.get_json(ip)</div><div class="line">    <span class="keyword">except</span>:</div><div class="line">        <span class="keyword">try</span>:</div><div class="line">            <span class="keyword">import</span> salt.runner</div><div class="line">            runner = salt.runner.RunnerClient(__opts__)</div><div class="line">            info = runner.cmd(fun=<span class="string">'jumpserver.get_host'</span>, kwarg=&#123;<span class="string">'ipaddress'</span>: ip&#125;, print_event=<span class="keyword">False</span>)</div><div class="line">            ret = info[<span class="string">'data'</span>][<span class="number">0</span>]</div><div class="line">            <span class="keyword">if</span> HAS_CACHE:</div><div class="line">                cache.store_json(ip, ret)</div><div class="line">        <span class="keyword">except</span>:</div><div class="line">            <span class="keyword">pass</span></div><div class="line">    <span class="keyword">return</span> &#123;<span class="string">'jumpserver'</span>: ret&#125;</div></pre></td></tr></table></figure>
+<p>在代码中，我们直接引用了写好的runner程序获得jumpserver的数据。<br>我们把缓存的逻辑处理放在pillar里面，get_host函数里面就可以不通过缓存。</p>
+<h4 id="通过自定义grains-module挖掘minion上的信息"><a href="#通过自定义grains-module挖掘minion上的信息" class="headerlink" title="通过自定义grains module挖掘minion上的信息"></a>通过自定义grains module挖掘minion上的信息</h4><p>jumpserver需要知道minion的端口号作为其中一个参数。我们可以使用grains，先将这部分数据挖掘出来。<br>而不必每次都去执行对应的逻辑，如果其他任务也用到这部分数据，也可以从grains中提取</p>
+<p><code>/srv/salt/_grains/sshd.py</code></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#!/usr/bin/env python</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">_sshd_conf</span><span class="params">(conf_file)</span>:</span></div><div class="line">    <span class="string">'''</span></div><div class="line">    parse sshd config file</div><div class="line">    '''</div><div class="line">    sshdconf = &#123;<span class="string">'enable_passwd'</span>: <span class="keyword">True</span>, <span class="string">'permit_root'</span>: <span class="keyword">True</span>, <span class="string">'port'</span>: <span class="number">22</span>&#125;</div><div class="line">    <span class="keyword">try</span>:</div><div class="line">        <span class="keyword">with</span> open(conf_file, <span class="string">'r'</span>) <span class="keyword">as</span> f:</div><div class="line">            <span class="keyword">for</span> l <span class="keyword">in</span> f:</div><div class="line">                <span class="keyword">if</span> l.startswith(<span class="string">'Port'</span>):</div><div class="line">                    sshdconf[<span class="string">'port'</span>] = int(l.split()[<span class="number">1</span>].lower())</div><div class="line">                <span class="keyword">if</span> l.startswith(<span class="string">'PasswordAuthentication'</span>):</div><div class="line">                    sshdconf[<span class="string">'enable_passwd'</span>] = <span class="keyword">True</span> <span class="keyword">if</span> l.split()[<span class="number">1</span>].lower() == <span class="string">'yes'</span> <span class="keyword">else</span> <span class="keyword">False</span></div><div class="line">                <span class="keyword">elif</span> l.startswith(<span class="string">'PermitRootLogin'</span>):</div><div class="line">                    sshdconf[<span class="string">'permit_root'</span>] = <span class="keyword">True</span> <span class="keyword">if</span> l.split()[<span class="number">1</span>].lower() == <span class="string">'yes'</span> <span class="keyword">else</span> <span class="keyword">False</span></div><div class="line">                    <span class="keyword">break</span></div><div class="line">    <span class="keyword">except</span>:</div><div class="line">        <span class="keyword">return</span> <span class="keyword">None</span></div><div class="line">    <span class="keyword">return</span> sshdconf</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">run</span><span class="params">()</span>:</span></div><div class="line">    grains = &#123;&#125;</div><div class="line">    sshd = _sshd_conf(<span class="string">'/etc/ssh/sshd_config'</span>)</div><div class="line">    <span class="keyword">if</span> sshd:</div><div class="line">        grains[<span class="string">'sshd'</span>] = sshd</div><div class="line">    <span class="keyword">return</span> grains</div></pre></td></tr></table></figure>
+<h4 id="在sls中使用py-render实现复杂逻辑"><a href="#在sls中使用py-render实现复杂逻辑" class="headerlink" title="在sls中使用py render实现复杂逻辑"></a>在sls中使用py render实现复杂逻辑</h4><p>我们在sls中，需要实现的是通过event.send将信息通过salt的事件系统传送到salt-master进行处理。</p>
+<p>sls默认的渲染器是jinja + yaml. 这本身可以实现大部分的逻辑功能，但是在某些异常复杂的场景下，依然会显得力不从心。<br>jinja只是一个模板语言，表达能力有限，用py渲染器反而会简单许多。</p>
+<p><code>/srv/salt/jobs/jumpserver/init.sls</code></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#!py</span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">run</span><span class="params">()</span>:</span></div><div class="line">    jump = __pillar__.get(<span class="string">'jumpserver'</span>, &#123;&#125;)</div><div class="line">    aws = __pillar__.get(<span class="string">'aws'</span>, &#123;&#125;)</div><div class="line">    qcloud = __pillar__.get(<span class="string">'qcloud'</span>, &#123;&#125;)</div><div class="line">    current_info = &#123;&#125;</div><div class="line">    other_info = &#123;&#125;</div><div class="line">    other_info[<span class="string">'os'</span>] = __grains__[<span class="string">'os'</span>]</div><div class="line">    other_info[<span class="string">'os_version'</span>] = __grains__[<span class="string">'osrelease'</span>]</div><div class="line">    other_info[<span class="string">'os_arch'</span>] = __grains__[<span class="string">'osarch'</span>]</div><div class="line">    ip = [ip <span class="keyword">for</span> ip <span class="keyword">in</span> __grains__[<span class="string">'ipv4'</span>] <span class="keyword">if</span> ip.startswith(<span class="string">'10.'</span>)][<span class="number">0</span>]</div><div class="line">    hostname = __grains__[<span class="string">'id'</span>]</div><div class="line">    port = __salt__[<span class="string">'grains.get'</span>](<span class="string">'sshd:port'</span>, <span class="number">22</span>)</div><div class="line">    <span class="keyword">if</span> aws:</div><div class="line">        ip = aws[<span class="string">'PrivateIpAddress'</span>]</div><div class="line">        hostname = aws[<span class="string">'Tags'</span>][<span class="string">'Name'</span>]</div><div class="line">        other_info[<span class="string">'vendor'</span>] = <span class="string">'aws'</span></div><div class="line">        other_info[<span class="string">'model'</span>] = aws[<span class="string">'InstanceType'</span>]</div><div class="line">        public_ip = aws.get(<span class="string">'PublicIpAddress'</span>)</div><div class="line">        <span class="keyword">if</span> public_ip:</div><div class="line">            other_info[<span class="string">'public_ip'</span>] = public_ip</div><div class="line">        created_by = aws[<span class="string">'Tags'</span>].get(<span class="string">'Creator'</span>)</div><div class="line">        <span class="keyword">if</span> created_by:</div><div class="line">            other_info[<span class="string">'created_by'</span>] = created_by</div><div class="line">    <span class="keyword">elif</span> qcloud:</div><div class="line">        ip = qcloud[<span class="string">'PrivateIpAddresses'</span>][<span class="number">0</span>]</div><div class="line">        hostname = qcloud[<span class="string">'InstanceName'</span>]</div><div class="line">        other_info[<span class="string">'vendor'</span>] = <span class="string">'qcloud'</span></div><div class="line">        public_ips = qcloud.get(<span class="string">'PublicIpAddresses'</span>)</div><div class="line">        <span class="keyword">if</span> public_ips:</div><div class="line">            other_info[<span class="string">'public_ip'</span>] = public_ips[<span class="number">0</span>]</div><div class="line">        created_by = qcloud[<span class="string">'Tags'</span>].get(<span class="string">'Creator'</span>)</div><div class="line">        <span class="keyword">if</span> created_by:</div><div class="line">            other_info[<span class="string">'created_by'</span>] = created_by</div><div class="line">    current_info[<span class="string">'ipaddress'</span>] = ip</div><div class="line">    <span class="keyword">if</span> __salt__[<span class="string">'config.get'</span>](<span class="string">'master'</span>) != __salt__[<span class="string">'pillar.get'</span>](<span class="string">'salt_info:core_master'</span>):</div><div class="line">        current_info[<span class="string">'_syndic_handle'</span>] = <span class="keyword">True</span></div><div class="line">    <span class="keyword">if</span> <span class="keyword">not</span> jump:</div><div class="line">        current_info[<span class="string">'hostname'</span>] = hostname</div><div class="line">        current_info[<span class="string">'port'</span>] = port</div><div class="line">        current_info[<span class="string">'other_info'</span>] = other_info</div><div class="line">        ret = &#123;<span class="string">'jumpserver/add_host'</span>: &#123;<span class="string">'event.send'</span>: [&#123;<span class="string">'data'</span>: current_info&#125;]&#125;&#125;</div><div class="line">        <span class="keyword">return</span> ret</div><div class="line">    <span class="keyword">else</span>:</div><div class="line">        <span class="keyword">if</span> hostname != jump.get(<span class="string">'hostname'</span>):</div><div class="line">            other_info[<span class="string">'hostname'</span>] = hostname</div><div class="line">        <span class="keyword">if</span> port != jump.get(<span class="string">'port'</span>):</div><div class="line">            other_info[<span class="string">'port'</span>] = port</div><div class="line">        fix_info = &#123;k:other_info[k] <span class="keyword">for</span> k <span class="keyword">in</span> other_info.keys() <span class="keyword">if</span> other_info[k] != jump[k]&#125;</div><div class="line">        <span class="keyword">if</span> fix_info:</div><div class="line">            current_info[<span class="string">'other_info'</span>] = fix_info</div><div class="line">            ret = &#123;<span class="string">'jumpserver/reset_host'</span>: &#123;<span class="string">'event.send'</span>: [&#123;<span class="string">'data'</span>: current_info&#125;]&#125;&#125;</div><div class="line">            <span class="keyword">return</span> ret</div></pre></td></tr></table></figure>
+<p>我们将grains中的数据，以及从pillar中取出来的数据，同现有的jumpserver的数据进行比较。<br>因为我们使用的云平台不同，所以获取数据的渠道也有别。aws 的pillar的数据，就是在我们上一篇文章中介绍的做法。<br>最后根据实际情况，使用jumpserver/add_host或者jumpserver/reset_host。</p>
+<h4 id="配置并编辑reactor"><a href="#配置并编辑reactor" class="headerlink" title="配置并编辑reactor"></a>配置并编辑reactor</h4><p>salt reactor是一个快捷的事件驱动框架。我们只需要定义一个event和reactor的映射关系，就可以构建一个事件处理系统</p>
+<p>reactor配置：</p>
+<p><code>/etc/salt/master.d/reactor.conf</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="attr">reator:</span></div><div class="line"><span class="bullet">  -</span> <span class="string">'jumpserver/add_host'</span>:</div><div class="line"><span class="bullet">    -</span> /srv/reactor/jumpserver/add_host.sls</div><div class="line"><span class="bullet">  -</span> <span class="string">'jumpserver/reset_host'</span>:</div><div class="line"><span class="bullet">    -</span> /srv/reactor/jumpserver/reset_host.sls</div></pre></td></tr></table></figure>
+<p>reactor编写:</p>
+<p><code>/srv/reactor/jumpserver/add_host.sls</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&#123;% if not <span class="string">"_syndic_handle"</span> in data[<span class="string">"data"</span>] or <span class="string">"salt-syndic"</span> in salt[<span class="string">"grains.get"</span>](<span class="string">"roles"</span>) %&#125;</div><div class="line"><span class="attr">add_host_to_jumpserver:</span></div><div class="line">  runner.jumpserver.add_host:</div><div class="line"><span class="attr">    - args:</span></div><div class="line"><span class="attr">        hostname:</span> &#123;&#123; data[<span class="string">"id"</span>] &#125;&#125;</div><div class="line"><span class="attr">        ipaddress:</span> &#123;&#123; data[<span class="string">"data"</span>][<span class="string">"ipaddress"</span>] &#125;&#125;</div><div class="line"><span class="attr">        port:</span> &#123;&#123; data[<span class="string">"data"</span>][<span class="string">"port"</span>] &#125;&#125;</div><div class="line">&#123;% if <span class="string">"other_info"</span> in data[<span class="string">"data"</span>] %&#125;</div><div class="line"><span class="attr">        other_info:</span> &#123;&#123; data[<span class="string">"data"</span>][<span class="string">"other_info"</span>] | tojson &#125;&#125;</div><div class="line">&#123;% endif %&#125;</div><div class="line">&#123;% endif %&#125;</div></pre></td></tr></table></figure>
+<p><code>/srv/reactor/jumpserver/reset_host.sls</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&#123;% if not <span class="string">"_syndic_handle"</span> in data[<span class="string">"data"</span>] or <span class="string">"salt-syndic"</span> in salt[<span class="string">"grains.get"</span>](<span class="string">"roles"</span>) %&#125;</div><div class="line"><span class="attr">jumpserver_reset_host:</span></div><div class="line">    runner.jumpserver.reset_host:</div><div class="line"><span class="attr">        - args:</span></div><div class="line"><span class="attr">            ipaddress:</span> &#123;&#123; data[<span class="string">"data"</span>][<span class="string">"ipaddress"</span>] &#125;&#125;</div><div class="line"><span class="attr">            other_info:</span> &#123;&#123; data[<span class="string">"data"</span>][<span class="string">"other_info"</span>] | tojson &#125;&#125;</div><div class="line">&#123;% endif %&#125;</div></pre></td></tr></table></figure>
+<p>在reator中，我们将事件直接映射到salt runner。如果有复杂的场景，我们可以把reactor映射到salt的orchestrater系统。<br>具体用法，可以参考salt官方文档，不再赘述。</p>
+<p>这里面有几个问题值得注意一下。 我们用到一个_syndic_handle的参数，这个原因我会再起一篇文章进行描述，暂且不表。<br>还有一个就是tojson的 jinja过滤器。这是salt2018.3引入的过滤器，用以解决sls不直接支持字典的问题。</p>
+<h4 id="处理主机删除后的jumpserver的垃圾清除"><a href="#处理主机删除后的jumpserver的垃圾清除" class="headerlink" title="处理主机删除后的jumpserver的垃圾清除"></a>处理主机删除后的jumpserver的垃圾清除</h4><p>这是最后一步工作了。因为主机已经删除了，所以肯定不能通过sls来调用了。<br>还记得我们在上一篇文章有一个垃圾处理的外部脚本，我们只需要把runner中的remove_host函数附加到主机删除的过程里面就可以了</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>在本次的案例中，我们采用的技术方案有</p>
+<ul>
+<li>使用salt runner作为service，快速的搭建一个自动处理服务</li>
+<li>使用在sls中使用py renderer来实现比较更加复杂的逻辑</li>
+<li>使用自定义grains,将客户端数据采集到salt中，供salt其他任务使用</li>
+<li>使用reactor解决安全问题，每个发出的事件，都由salt认证主机id。不过salt event系统中，并不包含minion的ip地址，因此没办法直接认证ip地址。需要对salt event进行一定的改良</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
   <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/06/saltstack1/">
 
   <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -277,7 +478,7 @@
               
                 
                 <a class="post-title-link" href="/2019/02/06/saltstack1/" itemprop="url">
-                  saltstack中设计模式(一)
+                  saltstack中的设计模式(一)
                 </a>
               
             
@@ -303,6 +504,28 @@
             
           </span>
 
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/saltstack/" itemprop="url" rel="index">
+                    <span itemprop="name">saltstack</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
           
 
           
@@ -374,7 +597,7 @@
 <figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="attr">aws:</span></div><div class="line"><span class="attr">  creds:</span></div><div class="line"><span class="attr">    - region_name:</span> cn-north<span class="bullet">-1</span></div><div class="line"><span class="attr">      aws_access_key_id:</span> xxx</div><div class="line"><span class="attr">      aws_secret_access_key:</span> xxx</div><div class="line"><span class="attr">    - region_name:</span> cn-north<span class="bullet">-1</span></div><div class="line"><span class="attr">      aws_access_key_id:</span> xxx</div><div class="line"><span class="attr">      aws_secret_access_key:</span> xxx</div><div class="line"><span class="attr">ip-range:</span></div><div class="line"><span class="bullet">-</span> <span class="number">10.</span>x.x.x/<span class="number">15</span></div><div class="line"><span class="bullet">-</span> <span class="number">10.</span>y.y.y/<span class="number">15</span></div></pre></td></tr></table></figure>
 <p>而run函数，则是pillar的主体，返回的dict，就是需要的结果。</p>
 <p>而renderer的关键之处，在与我们使用<code>__salt__[&quot;grains.get&quot;](&quot;ipv4&quot;)</code>获得了minion的ip地址。虽然整个代码是在master端执行的，但是整个执行环境中导入的双下划线变量，却是在minion端执行。因此，我们也可以将客户端的ip地址作为变量，传给渲染器</p>
-<p>剩下的代码逻辑就比较简单了，如果在缓存中已经存在信息了，就读取缓存，否则，通过aws的api直接获取信息。这样变可以解决实时性的问题</p>
+<p>剩下的代码逻辑就比较简单了，如果在缓存中已经存在信息了，就读取缓存，否则，通过aws的api直接获取信息。这样就可以解决实时性的问题</p>
 <h6 id="通过定期脚本更新信息"><a href="#通过定期脚本更新信息" class="headerlink" title="通过定期脚本更新信息"></a>通过定期脚本更新信息</h6><p>虽然新加入的主机pillar的实时性的问题得到了解决，但是更新还是需要等缓存过期。如果缓存时间过短，aws api的调用还是会很频繁，缓存时间太长。主机信息的更新变不及时。一个最简单的办法就是周期性进行一个全量的查询，进行缓存更新。同时利用这次全量查询，可以执行一些额外的任务，比如清除已经不在aws中存在的主机key, 代码和pillar的代码差别不大</p>
 <p><code>/opt/scripts/saltcron.py</code></p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div><div class="line">135</div><div class="line">136</div><div class="line">137</div><div class="line">138</div><div class="line">139</div><div class="line">140</div><div class="line">141</div><div class="line">142</div><div class="line">143</div><div class="line">144</div><div class="line">145</div><div class="line">146</div><div class="line">147</div><div class="line">148</div><div class="line">149</div><div class="line">150</div><div class="line">151</div><div class="line">152</div><div class="line">153</div><div class="line">154</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#!/usr/bin/env python</span></div><div class="line"><span class="comment"># author: thuhak.zhou@nio.com</span></div><div class="line"><span class="string">'''</span></div><div class="line">refresh redis cache for aws pillar</div><div class="line"></div><div class="line">remove minions which can not be found by aws api</div><div class="line">'''</div><div class="line"><span class="keyword">from</span> collections <span class="keyword">import</span> Iterable</div><div class="line"><span class="keyword">import</span> logging</div><div class="line"><span class="keyword">from</span> logging.handlers <span class="keyword">import</span> RotatingFileHandler</div><div class="line"><span class="keyword">from</span> ipaddress <span class="keyword">import</span> ip_address, ip_network</div><div class="line"><span class="keyword">from</span> threading <span class="keyword">import</span> Thread</div><div class="line"><span class="keyword">from</span> Queue <span class="keyword">import</span> Queue</div><div class="line"></div><div class="line"><span class="keyword">import</span> boto3</div><div class="line"><span class="keyword">import</span> salt.config</div><div class="line"><span class="keyword">import</span> salt.runner</div><div class="line"><span class="keyword">import</span> salt.client</div><div class="line"><span class="keyword">import</span> salt.wheel</div><div class="line"><span class="keyword">from</span> redis_cache <span class="keyword">import</span> *</div><div class="line"></div><div class="line">logger = logging.getLogger(<span class="string">'aws-cache'</span>)</div><div class="line">logger.setLevel(logging.INFO)</div><div class="line">formatter = logging.Formatter(<span class="string">'%(asctime)s [%(levelname)s]: %(message)s'</span>, <span class="string">"%Y-%m-%d %H:%M:%S"</span>)</div><div class="line">loghandler1 = RotatingFileHandler(<span class="string">'/var/log/aws/saltcron'</span>, maxBytes=<span class="number">10</span>*<span class="number">1024</span>*<span class="number">1024</span>, backupCount=<span class="number">7</span>)</div><div class="line">loghandler2 = logging.StreamHandler()</div><div class="line">loghandler1.setFormatter(formatter)</div><div class="line">loghandler2.setFormatter(formatter)</div><div class="line">logger.addHandler(loghandler1)</div><div class="line">logger.addHandler(loghandler2)</div><div class="line"></div><div class="line"></div><div class="line">saltconfig = salt.config.master_config(<span class="string">'/etc/salt/master'</span>)</div><div class="line">wheels = salt.wheel.WheelClient(saltconfig)</div><div class="line">runner = salt.runner.RunnerClient(saltconfig)</div><div class="line">caller = salt.client.Caller()</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">_encode_all</span><span class="params">(items, ignore_type=<span class="params">(unicode,str)</span>)</span>:</span></div><div class="line">    <span class="keyword">if</span> isinstance(items,dict):</div><div class="line">        new_item = &#123;&#125;</div><div class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> items:</div><div class="line">            new_item[k.encode(<span class="string">'ascii'</span>)] = _encode_all(items[k])</div><div class="line">        <span class="keyword">return</span> new_item</div><div class="line">    <span class="keyword">elif</span> isinstance(items, Iterable) <span class="keyword">and</span> <span class="keyword">not</span> isinstance(items, ignore_type):</div><div class="line">        new_item = []</div><div class="line">        <span class="keyword">for</span> x <span class="keyword">in</span> items:</div><div class="line">            new_item.append(_encode_all(x))</div><div class="line">        <span class="keyword">return</span> new_item</div><div class="line">    <span class="keyword">elif</span> isinstance(items,unicode):</div><div class="line">        <span class="keyword">return</span> items.encode(<span class="string">'ascii'</span>)</div><div class="line">    <span class="keyword">else</span>:</div><div class="line">        <span class="keyword">return</span> items</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">_tran_to_json</span><span class="params">(items)</span>:</span></div><div class="line">    <span class="keyword">if</span> isinstance(items,dict):</div><div class="line">        new_item = &#123;&#125;</div><div class="line">        <span class="keyword">for</span> k,v <span class="keyword">in</span> items.items():</div><div class="line">            new_item[k] = _tran_to_json(v)</div><div class="line">        <span class="keyword">return</span> new_item</div><div class="line">    <span class="keyword">elif</span> isinstance(items, list):</div><div class="line">        new_item = []</div><div class="line">        <span class="keyword">for</span> x <span class="keyword">in</span> items:</div><div class="line">            new_item.append(_tran_to_json(x))</div><div class="line">        <span class="keyword">return</span> new_item</div><div class="line">    <span class="keyword">elif</span> isinstance(items, (str, int, float, unicode)):</div><div class="line">        <span class="keyword">return</span> items</div><div class="line">    <span class="keyword">else</span>:</div><div class="line">        <span class="keyword">return</span> str(items)</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">_check_ip</span><span class="params">(ip)</span>:</span></div><div class="line">    <span class="keyword">try</span>:</div><div class="line">        ip_o = ip_address(ip.decode(<span class="string">'ascii'</span>))</div><div class="line">    <span class="keyword">except</span>:</div><div class="line">        <span class="keyword">return</span> <span class="keyword">False</span></div><div class="line">    valid_network = saltconfig[<span class="string">'ip-range'</span>]</div><div class="line">    <span class="keyword">for</span> raw_network <span class="keyword">in</span> valid_network:</div><div class="line">        network = ip_network(raw_network)</div><div class="line">        <span class="keyword">if</span> ip_o <span class="keyword">in</span> network:</div><div class="line">            <span class="keyword">return</span> <span class="keyword">True</span></div><div class="line">    <span class="keyword">return</span> <span class="keyword">False</span></div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">all_instance</span><span class="params">()</span>:</span></div><div class="line">    creds = _encode_all(saltconfig[<span class="string">'aws'</span>][<span class="string">'creds'</span>])</div><div class="line">    <span class="keyword">for</span> cred <span class="keyword">in</span> creds:</div><div class="line">        ec2 = boto3.client(<span class="string">'ec2'</span>, region_name=cred[<span class="string">'region_name'</span>],aws_access_key_id=cred[<span class="string">'aws_access_key_id'</span>], aws_secret_access_key=cred[<span class="string">'aws_secret_access_key'</span>])</div><div class="line">        result = ec2.describe_instances()[<span class="string">'Reservations'</span>]</div><div class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> result:</div><div class="line">            instances = i[<span class="string">'Instances'</span>]</div><div class="line">            <span class="keyword">for</span> instance <span class="keyword">in</span> instances:</div><div class="line">                Tags = &#123;&#125;</div><div class="line">                old_tag = instance.get(<span class="string">'Tags'</span>)</div><div class="line">                <span class="keyword">if</span> <span class="keyword">not</span> old_tag:</div><div class="line">                    logger.warning(<span class="string">'find ec2 instance without tag'</span>)</div><div class="line">                    logger.debug(str(instance))</div><div class="line">                <span class="keyword">else</span>:</div><div class="line">                    <span class="keyword">for</span> t <span class="keyword">in</span> old_tag:</div><div class="line">                        Tags[t[<span class="string">'Key'</span>]] = t[<span class="string">'Value'</span>]</div><div class="line">                instance[<span class="string">'Tags'</span>] = Tags</div><div class="line">                <span class="keyword">yield</span> _tran_to_json(instance)</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">GetServerList</span><span class="params">()</span>:</span></div><div class="line">    <span class="string">'''</span></div><div class="line">    get dead minions</div><div class="line">    '''</div><div class="line">    minions = runner.cmd(<span class="string">'manage.down'</span>, print_event=<span class="keyword">False</span>)</div><div class="line">    <span class="keyword">return</span> minions</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">DelServer</span><span class="params">(serName)</span>:</span></div><div class="line">    <span class="string">'''</span></div><div class="line">    delete server keys</div><div class="line">    '''</div><div class="line">    logger.info(<span class="string">'removing minion &#123;&#125; in salt'</span>.format(serName))</div><div class="line">    wheels.cmd_async(&#123;<span class="string">'fun'</span>: <span class="string">'key.delete'</span>, <span class="string">'match'</span>: serName&#125;)</div><div class="line"></div><div class="line"></div><div class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</div><div class="line">    cache = SimpleCache(<span class="number">50000</span>, expire=<span class="number">3600</span>, namespace=<span class="string">'aws'</span>)</div><div class="line">    queue = Queue()</div><div class="line">    t = Thread(target=<span class="keyword">lambda</span> q: q.put(GetServerList()), args=(queue,))</div><div class="line">    t.start()</div><div class="line">    all_ec2 = set()</div><div class="line">    logger.info(<span class="string">'start freshing cache for aws ec2'</span>)</div><div class="line">    <span class="keyword">for</span> instance <span class="keyword">in</span> all_instance():</div><div class="line">        <span class="keyword">try</span>:</div><div class="line">            interfaces = instance.get(<span class="string">'NetworkInterfaces'</span>)</div><div class="line">            <span class="keyword">if</span> <span class="keyword">not</span> interfaces:</div><div class="line">                logger.debug(<span class="string">'instance without interface'</span>)</div><div class="line">                logger.debug(str(instance))</div><div class="line">                <span class="keyword">continue</span></div><div class="line">            ip = interfaces[<span class="number">0</span>][<span class="string">'PrivateIpAddress'</span>]</div><div class="line">            <span class="keyword">if</span> <span class="keyword">not</span> _check_ip(ip):</div><div class="line">                logger.warning(<span class="string">'&#123;&#125; is not valid private ip'</span>.format(ip))</div><div class="line">                <span class="keyword">continue</span></div><div class="line">            name = instance[<span class="string">'Tags'</span>].get(<span class="string">'Name'</span>)</div><div class="line">            <span class="keyword">if</span> <span class="keyword">not</span> name:</div><div class="line">                logger.warning(<span class="string">'find ec2 &#123;&#125; without Name Tag'</span>.format(ip))</div><div class="line">            <span class="keyword">else</span>:</div><div class="line">                all_ec2.add(name)</div><div class="line">            logger.debug(<span class="string">'refresh cache for &#123;&#125;'</span>.format(ip))</div><div class="line">            cache.store_json(ip, instance)</div><div class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</div><div class="line">            logger.error(<span class="string">'some error happen for instance &#123;&#125;'</span>.format(instance))</div><div class="line">            <span class="keyword">continue</span></div><div class="line">    t.join()</div><div class="line">    minions = queue.get()</div><div class="line">    <span class="keyword">for</span> minion <span class="keyword">in</span> minions:</div><div class="line">        <span class="keyword">if</span> minion <span class="keyword">not</span> <span class="keyword">in</span> all_ec2:</div><div class="line">            DelServer(minion)</div></pre></td></tr></table></figure>
@@ -1621,7 +1844,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">8</span>
+                <span class="site-state-item-count">9</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -1630,7 +1853,7 @@
           
             <div class="site-state-item site-state-categories">
               <a href="/categories">
-                <span class="site-state-item-count">5</span>
+                <span class="site-state-item-count">6</span>
                 <span class="site-state-item-name">分类</span>
               </a>
             </div>
