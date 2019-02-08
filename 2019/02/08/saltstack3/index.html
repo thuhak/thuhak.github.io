@@ -68,7 +68,7 @@
 <link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="ntopng," />
+  <meta name="keywords" content="saltstack," />
 
 
 
@@ -84,28 +84,19 @@
 
 
 
-<meta name="description" content="ntopng是什么？ntopng是一个开源的网络流量分析平台。是传统的网络监控平台ntop的新一代产品。通常我们使用wireshark抓包工具对特定的网络接口进行抓包来进行详细流量分析。但是，这样操作会有以下几个问题：
-
-前期准备十分麻烦。如果采取旁路抓包的方式，需要先在交换机做流镜像，并且需要在该端口进行抓包。
-wireshark需要耗费大量内存，导致程序不稳定。难以进行持久的抓包统计分析。
-无">
+<meta name="description" content="在上一篇中，我们还留下了一个问题。就是在响应器中，我们使用了一个_syndic_handle的特殊参数。这个参数，引出了今天我们要讨论的话题
+如何在syndic上进行事件处理在于大规模的saltstack的部署环境，往往使用master，syndic的架构。因为设计的原因，所有syndi接收到c的事件都会由底向上传播至上层master。导致的结果是在事件处理中，同一个事件会被重复处理多次。为了防止">
 <meta property="og:type" content="article">
-<meta property="og:title" content="ntopng使用简介">
-<meta property="og:url" content="http://yoursite.com/2016/12/02/ntopng/index.html">
+<meta property="og:title" content="saltstack中的设计模式(三)">
+<meta property="og:url" content="http://yoursite.com/2019/02/08/saltstack3/index.html">
 <meta property="og:site_name" content="fightclub">
-<meta property="og:description" content="ntopng是什么？ntopng是一个开源的网络流量分析平台。是传统的网络监控平台ntop的新一代产品。通常我们使用wireshark抓包工具对特定的网络接口进行抓包来进行详细流量分析。但是，这样操作会有以下几个问题：
-
-前期准备十分麻烦。如果采取旁路抓包的方式，需要先在交换机做流镜像，并且需要在该端口进行抓包。
-wireshark需要耗费大量内存，导致程序不稳定。难以进行持久的抓包统计分析。
-无">
-<meta property="og:updated_time" content="2016-12-02T06:07:58.000Z">
+<meta property="og:description" content="在上一篇中，我们还留下了一个问题。就是在响应器中，我们使用了一个_syndic_handle的特殊参数。这个参数，引出了今天我们要讨论的话题
+如何在syndic上进行事件处理在于大规模的saltstack的部署环境，往往使用master，syndic的架构。因为设计的原因，所有syndi接收到c的事件都会由底向上传播至上层master。导致的结果是在事件处理中，同一个事件会被重复处理多次。为了防止">
+<meta property="og:updated_time" content="2019-02-08T02:15:55.377Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="ntopng使用简介">
-<meta name="twitter:description" content="ntopng是什么？ntopng是一个开源的网络流量分析平台。是传统的网络监控平台ntop的新一代产品。通常我们使用wireshark抓包工具对特定的网络接口进行抓包来进行详细流量分析。但是，这样操作会有以下几个问题：
-
-前期准备十分麻烦。如果采取旁路抓包的方式，需要先在交换机做流镜像，并且需要在该端口进行抓包。
-wireshark需要耗费大量内存，导致程序不稳定。难以进行持久的抓包统计分析。
-无">
+<meta name="twitter:title" content="saltstack中的设计模式(三)">
+<meta name="twitter:description" content="在上一篇中，我们还留下了一个问题。就是在响应器中，我们使用了一个_syndic_handle的特殊参数。这个参数，引出了今天我们要讨论的话题
+如何在syndic上进行事件处理在于大规模的saltstack的部署环境，往往使用master，syndic的架构。因为设计的原因，所有syndi接收到c的事件都会由底向上传播至上层master。导致的结果是在事件处理中，同一个事件会被重复处理多次。为了防止">
 
 
 
@@ -133,13 +124,13 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2016/12/02/ntopng/"/>
+  <link rel="canonical" href="http://yoursite.com/2019/02/08/saltstack3/"/>
 
 
 
 
 
-  <title> ntopng使用简介 | fightclub </title>
+  <title> saltstack中的设计模式(三) | fightclub </title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -262,7 +253,7 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/12/02/ntopng/">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/08/saltstack3/">
 
   <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
     <meta itemprop="name" content="thuhak">
@@ -286,7 +277,7 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
             
             
               
-                ntopng使用简介
+                saltstack中的设计模式(三)
               
             
           </h1>
@@ -301,8 +292,8 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2016-12-02T21:49:25+08:00">
-                2016-12-02
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-08T08:32:09+08:00">
+                2019-02-08
               </time>
             
 
@@ -324,8 +315,8 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/网络/" itemprop="url" rel="index">
-                    <span itemprop="name">网络</span>
+                  <a href="/categories/saltstack/" itemprop="url" rel="index">
+                    <span itemprop="name">saltstack</span>
                   </a>
                 </span>
 
@@ -359,44 +350,35 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
       
 
       
-        <h3 id="ntopng是什么？"><a href="#ntopng是什么？" class="headerlink" title="ntopng是什么？"></a>ntopng是什么？</h3><p><a href="http://www.ntop.org/products/traffic-analysis/ntop/" target="_blank" rel="external">ntopng</a>是一个开源的网络流量分析平台。是传统的网络监控平台ntop的新一代产品。<br>通常我们使用wireshark抓包工具对特定的网络接口进行抓包来进行详细流量分析。<br>但是，这样操作会有以下几个问题：</p>
-<ol>
-<li>前期准备十分麻烦。如果采取旁路抓包的方式，需要先在交换机做流镜像，并且需要在该端口进行抓包。</li>
-<li>wireshark需要耗费大量内存，导致程序不稳定。难以进行持久的抓包统计分析。</li>
-<li>无法进行大范围统计，不能了解全网网络情况。</li>
-</ol>
-<p>我们再来看ntopng是如何解决以上几个问题的。</p>
-<ol>
-<li>ntopng是一个B/S架构的平台。管理员只需要配置好采集部分就可以通过浏览器查看统计结果</li>
-<li>ntopng专门为大数据量采集进行设计。在不需要持续存储的情况下，采用rrd数据库进行数据保存。而且ntopng社区专门设计了一个高性能的持续存储方案n2disk进行大量数据包采集。</li>
-<li>ntopng使用配套的nprobe来支持sflow,netflow流量采集协议。能够以极小的成本进行大范围的流量分析。</li>
-</ol>
-<h3 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h3><p>ntopng的部署有源码安装和二进制安装两种方式。<br>源码安装需要从社区官网下载源码编译，而二进制安装需要切换到互联网，把yum指向指定的软件安装源进行安装。<br>社区网站有下面几个产品：</p>
+        <p>在上一篇中，我们还留下了一个问题。就是在响应器中，我们使用了一个_syndic_handle的特殊参数。<br>这个参数，引出了今天我们要讨论的话题</p>
+<h3 id="如何在syndic上进行事件处理"><a href="#如何在syndic上进行事件处理" class="headerlink" title="如何在syndic上进行事件处理"></a>如何在syndic上进行事件处理</h3><p>在于大规模的saltstack的部署环境，往往使用master，syndic的架构。<br>因为设计的原因，所有syndi接收到c的事件都会由底向上传播至上层master。<br>导致的结果是在事件处理中，同一个事件会被重复处理多次。<br>为了防止这这个问题，我们可以采取以下几种方法</p>
 <ul>
-<li>ntopng  —web平台</li>
-<li>nprobe  —一个可扩展的采集器。支持多种采集架构和插件，并且支持sflow协议和netflow协议采集。</li>
-<li>n2disk  —抓包数据存储库</li>
-<li>pf_ring —高性能的抓包库，可以让普通pc也能进行大数据包采集</li>
-<li>ndpi    —跨平台的高层协议解析库</li>
-<li>nbox    —小型嵌入式采集系统</li>
+<li>禁用syndic的事件处理配置，由master统一处理</li>
+<li>禁用master的事件处理配置，由syndic统一进程处理</li>
+<li>在事件发送的时候添加一个标记， 并在处理逻辑中解析这个标记，并做应用层的路由</li>
 </ul>
-<p>我都安装了，但实际使用起来只有ntopng和nprobe有用到。ndpi已经集成在ntopng内部。其他组件并没有用到。<br>另外，二进制安装默认安装的是企业试用版，如果一段时间不激活，会降成社区版。<br>企业版的dashboard界面和社区版有所不同，并且提供了报表功能。对，社区版不含报表功能。升级企业版需要150欧元。</p>
-<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>我把ntopng和nprobe装在同一台虚拟机上。nprobe做sflow采集，将结果发送到本地的zmq消息队列上，ntopng再从该队列读取信息。<br>nprobe启动参数如下:<br>    <figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">/usr/<span class="built_in">local</span>/bin/nprobe --zmq tcp://127.0.0.1:5556 -i none -n none --collector-port 6343 -b 2</div></pre></td></tr></table></figure></p>
-<p>由于ntopng参数较多，我把他们放入了配置文件中<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">-G=/var/tmp/ntopng.pid</div><div class="line">-d=/storage/ntopng</div><div class="line">-i=tcp://127.0.0.1:5556</div><div class="line">-p=/etc/ntopng/protos</div><div class="line">-F=es;ntopng;ntopng-%Y.%m.%d;http://169.24.2.96:9200/_bulk</div></pre></td></tr></table></figure></p>
-<p>配置文件中指定了pid文件位置，存储地点，需要采集的zmq队列接口，ndpi协议文件位置以及elasticsearch参数。<br>其中，比较主要的是ndpi协议文件，我们通过该文件进行协议自定义。</p>
-<p>格式是 [tcp|udp]:端口号@自定义协议名。</p>
-<p>我们的示例文件内容如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">tcp:42966@HP-RGS</div><div class="line">tcp:49152-49157@vmware-tools</div><div class="line">udp:4172@vmware-view</div></pre></td></tr></table></figure></p>
-<h3 id="历史信息统计"><a href="#历史信息统计" class="headerlink" title="历史信息统计"></a>历史信息统计</h3><p>标准安装后，ntopng显示的是实时信息。官方提供两种方式来进行历史数据统计。</p>
-<ul>
-<li>安装mysql数据库</li>
-<li>使用elasticsearch</li>
-</ul>
-<p>目前我配置的是elasticsearch，但是并没有做具体的字段优化。我还没有试验本地mysql的效果如何。<br>另外，elasticsearch提供一个packetbeat的数据包统计方案，我也没试过这两种方案的对比。</p>
-<h3 id="交换机上的sflow协议配置"><a href="#交换机上的sflow协议配置" class="headerlink" title="交换机上的sflow协议配置"></a>交换机上的sflow协议配置</h3><p>我们使用的h3c交换机主要通过rmon,netstream,sflow三种协议实现流量采集。rmon是对snmp的增强，主要实现的是流量报警。netstream,sflow实现的是对报文的采样和统计。因为是采样分析，所以并不占用多少带宽而且性能也很不错。但是因为缺少了信息，采集精度上会打折扣。如果想要更大的精度可以再添加一个抓包模式的nprobe。</p>
-<p>sflow配置样例:</p>
-<p>配置sflow collector地址：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sflow collector 1 ip 169.24.2.200 description ntop</div></pre></td></tr></table></figure></p>
-<p>配置监控端口：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">interface GigabitEthernet7/0/10</div><div class="line"> port link-mode bridge</div><div class="line"> description dell</div><div class="line"> port link-type trunk</div><div class="line"> port trunk permit vlan all</div><div class="line"> broadcast-suppression 1</div><div class="line"> sflow flow collector 1      #采集器编号</div><div class="line"> sflow sampling-rate 4000    #采样频率，这里是1/4000.即每4000个包采一个</div><div class="line"> sflow counter collector 1   #计数采集器编号</div><div class="line"> sflow counter interval 120  #采集周期120秒</div></pre></td></tr></table></figure></p>
-<h3 id="其他问题"><a href="#其他问题" class="headerlink" title="其他问题"></a>其他问题</h3><p>ntopng只针对tcp,ip的流量、协议的分布进行统计。并没有细致到tcp的具体参数，比如包大小分布统计、tcp往返周期统计等等。好在这些需求并不常见。如果有这种需求，还得用wireshark</p>
+<p>第一种方案最为简单，一旦master和syndic之间出现通讯故障，会导致syndic上的事件处理失效</p>
+<p>而第二种方案的，在有些情况下，比如有很多minion直连master的场景下，就没办法使用</p>
+<p>综上，还是最后一种方案适用性更广一点。</p>
+<p>思路就是这样，根据实际的架构情况可以采取不同的做法。对于我现在的场景，实现方式如下：</p>
+<ol>
+<li>从syndic下面触发的事件需要在发送事件的时候添加标记，例如_syndic_handle。对于整个配置文件是从master同步过去的syndic来讲，需要客户端动态的获得信息，知道自己是否是连接到syndic上面。salt-minion可以解析自己的配置文件，获取当前的master地址。我们将内置的salt架构信息通过pillar的方式下发给客户端，客户端就可以根据这些信息决定是否要设置这个标记</li>
+<li>在reactor对应的入口文件进行判别，根据获取data中的标记，来决定是进行处理，还是直接忽略整个处理流</li>
+</ol>
+<p>具体步骤：</p>
+<h4 id="添加pillar文件，告诉所有minion-master地址"><a href="#添加pillar文件，告诉所有minion-master地址" class="headerlink" title="添加pillar文件，告诉所有minion master地址"></a>添加pillar文件，告诉所有minion master地址</h4><p><code>/srv/pillar/salt_info.sls</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="attr">salt_info:</span></div><div class="line"><span class="attr">  core_master:</span> <span class="number">10.0</span><span class="number">.0</span><span class="number">.1</span></div></pre></td></tr></table></figure>
+<h4 id="在sls中通过对比自己的master和真实master的地址，决定是否添加syndic处理标记"><a href="#在sls中通过对比自己的master和真实master的地址，决定是否添加syndic处理标记" class="headerlink" title="在sls中通过对比自己的master和真实master的地址，决定是否添加syndic处理标记"></a>在sls中通过对比自己的master和真实master的地址，决定是否添加syndic处理标记</h4><p><code>/srv/salt/somejob.sls</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">somejob/someevent:</div><div class="line">  event.send:</div><div class="line"><span class="attr">    - data:</span></div><div class="line">&#123;% if salt[<span class="string">"config.get"</span>](<span class="string">"master"</span>) != salt[<span class="string">"pillar.get"</span>](<span class="string">"salt_info:core_master"</span>) %&#125;</div><div class="line"><span class="attr">      _syndic_handle:</span> <span class="literal">True</span></div><div class="line">&#123;% endif %&#125;</div><div class="line"><span class="attr">      - otherdata:</span> &#123;&#123; otherdata &#125;&#125;</div></pre></td></tr></table></figure>
+<h4 id="reactor配置"><a href="#reactor配置" class="headerlink" title="reactor配置"></a>reactor配置</h4><p><code>/etc/salt/master.d/reactor.conf</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="attr">reactor:</span></div><div class="line"><span class="bullet">  -</span> somejob/someevent:</div><div class="line"><span class="bullet">    -</span> /srv/reactors/somejob/someevent.sls</div></pre></td></tr></table></figure>
+<h4 id="为salt-master和salt-syndic上面打上grains标签"><a href="#为salt-master和salt-syndic上面打上grains标签" class="headerlink" title="为salt-master和salt-syndic上面打上grains标签"></a>为salt-master和salt-syndic上面打上grains标签</h4><p>在master上，执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">salt-call grains.append roles salt-master</div></pre></td></tr></table></figure>
+<p>在sydic上执行</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">salt-call grains.append roles salt-syndic</div></pre></td></tr></table></figure>
+<p>在打好标记以后，需要确认grains最终被写到了/etc/salt/grains下面，而不是在minion的配置文件里，否则是无效的</p>
+<h4 id="编写reactor文件"><a href="#编写reactor文件" class="headerlink" title="编写reactor文件"></a>编写reactor文件</h4><p><code>/srv/reactors/somejob/someevent.sls</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&#123;% if not <span class="string">"_syndic_handle"</span> in data[<span class="string">"data"</span>] or <span class="string">"salt-syndic"</span> in salt[<span class="string">"grains.get"</span>](<span class="string">"roles"</span>) %&#125;</div><div class="line"><span class="attr">IPARENAME:</span></div><div class="line">  runner.somejob:</div><div class="line"><span class="attr">    - args:</span></div><div class="line"><span class="attr">      - otherdata:</span> &#123;&#123; data[<span class="string">"data"</span>][<span class="string">"other_info"</span>] &#125;&#125;</div><div class="line">&#123;% endif %&#125;</div></pre></td></tr></table></figure>
 
       
     </div>
@@ -420,7 +402,7 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
       
         <div class="post-tags">
           
-            <a href="/tags/ntopng/" rel="tag"># ntopng</a>
+            <a href="/tags/saltstack/" rel="tag"># saltstack</a>
           
         </div>
       
@@ -429,8 +411,8 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2016/11/21/heap/" rel="next" title="heap中的heapify与依次压入队列的差异">
-                <i class="fa fa-chevron-left"></i> heap中的heapify与依次压入队列的差异
+              <a href="/2019/02/07/saltstack2/" rel="next" title="saltstack中的设计模式(二)">
+                <i class="fa fa-chevron-left"></i> saltstack中的设计模式(二)
               </a>
             
           </div>
@@ -438,10 +420,6 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2016/12/02/export-gpo/" rel="prev" title="将组策略导出成excel">
-                将组策略导出成excel <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -564,7 +542,7 @@ wireshark需要耗费大量内存，导致程序不稳定。难以进行持久�
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#ntopng是什么？"><span class="nav-number">1.</span> <span class="nav-text">ntopng是什么？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#部署"><span class="nav-number">2.</span> <span class="nav-text">部署</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置"><span class="nav-number">3.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#历史信息统计"><span class="nav-number">4.</span> <span class="nav-text">历史信息统计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#交换机上的sflow协议配置"><span class="nav-number">5.</span> <span class="nav-text">交换机上的sflow协议配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#其他问题"><span class="nav-number">6.</span> <span class="nav-text">其他问题</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#如何在syndic上进行事件处理"><span class="nav-number">1.</span> <span class="nav-text">如何在syndic上进行事件处理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#添加pillar文件，告诉所有minion-master地址"><span class="nav-number">1.1.</span> <span class="nav-text">添加pillar文件，告诉所有minion master地址</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#在sls中通过对比自己的master和真实master的地址，决定是否添加syndic处理标记"><span class="nav-number">1.2.</span> <span class="nav-text">在sls中通过对比自己的master和真实master的地址，决定是否添加syndic处理标记</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#reactor配置"><span class="nav-number">1.3.</span> <span class="nav-text">reactor配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为salt-master和salt-syndic上面打上grains标签"><span class="nav-number">1.4.</span> <span class="nav-text">为salt-master和salt-syndic上面打上grains标签</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#编写reactor文件"><span class="nav-number">1.5.</span> <span class="nav-text">编写reactor文件</span></a></li></ol></li></ol></div>
             
 
           </div>
