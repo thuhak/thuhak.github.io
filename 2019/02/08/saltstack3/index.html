@@ -92,7 +92,7 @@
 <meta property="og:site_name" content="fightclub">
 <meta property="og:description" content="在上一篇中，我们还留下了一个问题。就是在响应器中，我们使用了一个_syndic_handle的特殊参数。这个参数，引出了今天我们要讨论的话题
 如何在syndic上进行事件处理在于大规模的saltstack的部署环境，往往使用master，syndic的架构。因为设计的原因，所有syndi接收到c的事件都会由底向上传播至上层master。导致的结果是在事件处理中，同一个事件会被重复处理多次。为了防止">
-<meta property="og:updated_time" content="2019-02-08T02:15:55.377Z">
+<meta property="og:updated_time" content="2019-02-08T02:24:32.699Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="saltstack中的设计模式(三)">
 <meta name="twitter:description" content="在上一篇中，我们还留下了一个问题。就是在响应器中，我们使用了一个_syndic_handle的特殊参数。这个参数，引出了今天我们要讨论的话题
@@ -351,7 +351,7 @@
 
       
         <p>在上一篇中，我们还留下了一个问题。就是在响应器中，我们使用了一个_syndic_handle的特殊参数。<br>这个参数，引出了今天我们要讨论的话题</p>
-<h3 id="如何在syndic上进行事件处理"><a href="#如何在syndic上进行事件处理" class="headerlink" title="如何在syndic上进行事件处理"></a>如何在syndic上进行事件处理</h3><p>在于大规模的saltstack的部署环境，往往使用master，syndic的架构。<br>因为设计的原因，所有syndi接收到c的事件都会由底向上传播至上层master。<br>导致的结果是在事件处理中，同一个事件会被重复处理多次。<br>为了防止这这个问题，我们可以采取以下几种方法</p>
+<h3 id="如何在syndic上进行事件处理"><a href="#如何在syndic上进行事件处理" class="headerlink" title="如何在syndic上进行事件处理"></a>如何在syndic上进行事件处理</h3><p>在于大规模的saltstack的部署环境，往往使用master，syndic的架构。<br>因为设计的原因，所有syndi接收到c的事件都会由底向上传播至上层master。<br>导致的结果是在事件处理中，同一个事件会被重复处理多次。<br>为了防止这个问题，我们可以采取以下几种方法</p>
 <ul>
 <li>禁用syndic的事件处理配置，由master统一处理</li>
 <li>禁用master的事件处理配置，由syndic统一进程处理</li>
@@ -421,6 +421,10 @@
 
           <div class="post-nav-prev post-nav-item">
             
+              <a href="/2019/02/09/saltstack4/" rel="prev" title="saltstack中的设计模式(四)">
+                saltstack中的设计模式(四) <i class="fa fa-chevron-right"></i>
+              </a>
+            
           </div>
         </div>
       
@@ -489,7 +493,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">10</span>
+                <span class="site-state-item-count">11</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>

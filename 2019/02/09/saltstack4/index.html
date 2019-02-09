@@ -68,7 +68,7 @@
 <link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="zabbix," />
+  <meta name="keywords" content="saltstack," />
 
 
 
@@ -84,22 +84,16 @@
 
 
 
-<meta name="description" content="昨天zabbix conf首次来到中国。规模非常小，来的好像只有zabbix的作者alex一个人。而且规模很小，也没什么宣传。我也是在浏览zabbix官方主页寻找有什么新东西的时候不小心发现的。于是就跑过去凑了个热闹。
-会议的安排只有半天，其中有一半时间是alex个人讲ppt。 第一次见到alex真人，长得很帅，有些神似郑少秋。 但是讲的东西没什么新鲜的内容。
-先说的他是怎么开始开发zabbix的">
+<meta name="description" content="在上一篇文章中，我们介绍了一个技巧，在syndic环境中，让syndic和master都能进行事件处理。在此需要声明的事，salt是一个发展中的软件，通常每年都会有一到两次大的版本更新，会带来若干变更。很多geek技巧会因为版本的更新而被替换为更为简洁的方法。本篇文章是基于2018.3，很多已经同我最早从使用的2015版本的有了极大的差异。因此，在使用新的发布版前，务必阅读release note">
 <meta property="og:type" content="article">
-<meta property="og:title" content="zabbix conf 2016 上海站见闻">
-<meta property="og:url" content="http://yoursite.com/2016/11/17/zabbix-china-conf/index.html">
+<meta property="og:title" content="saltstack中的设计模式(四)">
+<meta property="og:url" content="http://yoursite.com/2019/02/09/saltstack4/index.html">
 <meta property="og:site_name" content="fightclub">
-<meta property="og:description" content="昨天zabbix conf首次来到中国。规模非常小，来的好像只有zabbix的作者alex一个人。而且规模很小，也没什么宣传。我也是在浏览zabbix官方主页寻找有什么新东西的时候不小心发现的。于是就跑过去凑了个热闹。
-会议的安排只有半天，其中有一半时间是alex个人讲ppt。 第一次见到alex真人，长得很帅，有些神似郑少秋。 但是讲的东西没什么新鲜的内容。
-先说的他是怎么开始开发zabbix的">
-<meta property="og:updated_time" content="2016-11-17T06:12:44.000Z">
+<meta property="og:description" content="在上一篇文章中，我们介绍了一个技巧，在syndic环境中，让syndic和master都能进行事件处理。在此需要声明的事，salt是一个发展中的软件，通常每年都会有一到两次大的版本更新，会带来若干变更。很多geek技巧会因为版本的更新而被替换为更为简洁的方法。本篇文章是基于2018.3，很多已经同我最早从使用的2015版本的有了极大的差异。因此，在使用新的发布版前，务必阅读release note">
+<meta property="og:updated_time" content="2019-02-09T02:06:52.871Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="zabbix conf 2016 上海站见闻">
-<meta name="twitter:description" content="昨天zabbix conf首次来到中国。规模非常小，来的好像只有zabbix的作者alex一个人。而且规模很小，也没什么宣传。我也是在浏览zabbix官方主页寻找有什么新东西的时候不小心发现的。于是就跑过去凑了个热闹。
-会议的安排只有半天，其中有一半时间是alex个人讲ppt。 第一次见到alex真人，长得很帅，有些神似郑少秋。 但是讲的东西没什么新鲜的内容。
-先说的他是怎么开始开发zabbix的">
+<meta name="twitter:title" content="saltstack中的设计模式(四)">
+<meta name="twitter:description" content="在上一篇文章中，我们介绍了一个技巧，在syndic环境中，让syndic和master都能进行事件处理。在此需要声明的事，salt是一个发展中的软件，通常每年都会有一到两次大的版本更新，会带来若干变更。很多geek技巧会因为版本的更新而被替换为更为简洁的方法。本篇文章是基于2018.3，很多已经同我最早从使用的2015版本的有了极大的差异。因此，在使用新的发布版前，务必阅读release note">
 
 
 
@@ -127,13 +121,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2016/11/17/zabbix-china-conf/"/>
+  <link rel="canonical" href="http://yoursite.com/2019/02/09/saltstack4/"/>
 
 
 
 
 
-  <title> zabbix conf 2016 上海站见闻 | fightclub </title>
+  <title> saltstack中的设计模式(四) | fightclub </title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -256,7 +250,7 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/11/17/zabbix-china-conf/">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/09/saltstack4/">
 
   <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
     <meta itemprop="name" content="thuhak">
@@ -280,7 +274,7 @@
             
             
               
-                zabbix conf 2016 上海站见闻
+                saltstack中的设计模式(四)
               
             
           </h1>
@@ -295,8 +289,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2016-11-17T20:29:24+08:00">
-                2016-11-17
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-09T08:09:34+08:00">
+                2019-02-09
               </time>
             
 
@@ -318,8 +312,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/日志/" itemprop="url" rel="index">
-                    <span itemprop="name">日志</span>
+                  <a href="/categories/saltstack/" itemprop="url" rel="index">
+                    <span itemprop="name">saltstack</span>
                   </a>
                 </span>
 
@@ -353,13 +347,28 @@
       
 
       
-        <p>昨天zabbix conf首次来到中国。规模非常小，来的好像只有zabbix的作者alex一个人。<br>而且规模很小，也没什么宣传。我也是在浏览zabbix官方主页寻找有什么新东西的时候不小心发现的。于是就跑过去凑了个热闹。</p>
-<p>会议的安排只有半天，其中有一半时间是alex个人讲ppt。 第一次见到alex真人，长得很帅，有些神似郑少秋。 但是讲的东西没什么新鲜的内容。</p>
-<p>先说的他是怎么开始开发zabbix的。好像是在98年开始写第一行代码，那时候他在银行上班，做系统管理员，管些数据库之类的。觉得管起来特麻烦，就决定自己搞个平台。用下班和周末的时间弄弄，结果一不小心就越弄越大。最后干脆把工作辞了，专心写zabbix。一开始只有一个人，到后来周围也围绕了45个小伙伴。工作室也开到了日本和纽约。听起来和其他传奇故事差不多。</p>
-<p>然后在介绍了下zabbix的大致功能。这其实也没啥好说的。</p>
-<p>最后一帮子国内的几个做周边的厂商上来推广自己的产品后就结束。</p>
-<p>会议中比较重要的信息就是alex明确表示会掌控zabbix所有的核心代码,以及产品方向。这也是为什么zabbix不参与资本运作，也不使用github接受其第三方提供的代码。这个想法很好理解,换我估计也会这样做。</p>
-<p>期间我也问了几个问题。只是我对自己的英文比较没信心，让其他人帮忙翻译。<br>其中比较主要的就是我觉着很多时候二维的时间序列能够提供的信息是有限的。最好还能有类似es这种可以使用其他维度进行聚合的方法。以及act最好能有类似基于事件的交互机制。<br>其他也有人问到zabbix是否能够提供事务追踪以及更为丰富的api。<br>其实很多解决问题的关键点都差不多，就是history存储的设计太为简陋。如果要想有本质上的功能进步，必须操刀大改才行。</p>
+        <p>在<a href="https://thuhak.github.io/2019/02/08/saltstack3/" target="_blank" rel="external">上一篇</a>文章中，我们介绍了一个技巧，<br>在syndic环境中，让syndic和master都能进行事件处理。在此需要声明的事，salt是一个发展中的软件，<br>通常每年都会有一到两次大的版本更新，会带来若干变更。很多geek技巧会因为版本的更新而被替换为更为简洁的方法。<br>本篇文章是基于2018.3，很多已经同我最早从使用的2015版本的有了极大的差异。因此，在使用新的发布版前，务必阅读release note，了解有哪些关键的特性改变。</p>
+<p>在本篇文章，我将介绍一种使用import jinja进行sls复用的方法。接下来我们进入今天的案例</p>
+<h3 id="为通过salt部署的服务打上标签"><a href="#为通过salt部署的服务打上标签" class="headerlink" title="为通过salt部署的服务打上标签"></a>为通过salt部署的服务打上标签</h3><p>我们会使用salt快速部署一些服务，比如mysql, redis, mongodb, rabbitmq等等。<br>我们希望每次在部署以后，给这个minion添加一个对应的标签，便于搜索时候使用。</p>
+<p>salt有pillar和grains两种方式可以实现这个功能</p>
+<p>如果使用pillar，我们需要引入一个动态的pillar存储。我们还要再做一些用来进行写入的state模块，比较复杂。<br>使用grains会更简单的一些，这样，我们可以通过salt -G ‘roles:tag’按照标签进行搜索。<br>我们可以使用salt内置的grains.append模块对roles这个列表进行标签添加，但是这个函数不具备stateful的能力，每次执行都会把内容重新append一次。</p>
+<p>针对这个问题，我们可以有以下几个方案：</p>
+<ul>
+<li>修改grains内置模块，并将代码提交给社区</li>
+<li>另外写一个state模块，比如mygrains, 实现自己想要的功能</li>
+<li>自己在sls中，通过jinja进行简单的逻辑处理</li>
+</ul>
+<p>前两种方案都是推荐使用的，但是我们今天要介绍的是第三种方案，这种处理方式会更为轻量级，也更容易一些。</p>
+<h4 id="实现方案"><a href="#实现方案" class="headerlink" title="实现方案"></a>实现方案</h4><p><code>/srv/salt/macros/setrole.sls</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">&#123;% macro setrole() -%&#125;</div><div class="line">&#123;% set roles = salt[<span class="string">"grains.get"</span>](<span class="string">"roles"</span>, []) %&#125;</div><div class="line">&#123;% for role in varargs %&#125;</div><div class="line">&#123;% if role not in roles %&#125;</div><div class="line">&#123;&#123; role &#125;&#125;_roles:</div><div class="line">&#123;% if roles == [] and loop.index == <span class="number">1</span> %&#125;</div><div class="line">  grains.present:</div><div class="line"><span class="attr">    - force:</span> <span class="literal">True</span></div><div class="line"><span class="attr">    - value:</span></div><div class="line"><span class="bullet">      -</span> &#123;&#123; role &#125;&#125;</div><div class="line"><span class="attr">    - name:</span> roles</div><div class="line">&#123;% else %&#125;</div><div class="line">  grains.append:</div><div class="line"><span class="attr">    - value:</span></div><div class="line"><span class="bullet">      -</span> &#123;&#123; role &#125;&#125;</div><div class="line"><span class="attr">    - name:</span> roles</div><div class="line">&#123;% endif %&#125;</div><div class="line">&#123;% endif %&#125;</div><div class="line">&#123;% endfor %&#125;</div><div class="line">&#123;%- endmacro %&#125;</div></pre></td></tr></table></figure>
+<p>我们单独写一个jinja macro， 叫做setrole，并放在某个路径下。<br>我们再通过jinja import的方式，应用这个写好的宏。</p>
+<p>比如我们写了一个dnsmasq部署的state <code>/srv/salt/services/dnsmasq/init.sls</code>,<br>我们可以在适当的地方加入两行jinja代码即可</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">&#123;% from <span class="string">"macros/setrole.sls"</span> import setrole %&#125;</div><div class="line">&#123;&#123; setrole(<span class="string">"dns"</span>, <span class="string">"dnsmasq"</span>) &#125;&#125;</div></pre></td></tr></table></figure>
+<p>这样，dns和dnsmasq都会被附加在grains 的roles里面。<br>唯一需要注意的是jinja import的路径和salt fileserver保持一致即可。</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>默认的sls的所使用的渲染器是jinja|yaml，jinja可以使用import进行引用，而yaml可以通过include进行引用。大部分时候，我们都可以使用include就能解决sls引用的问题, 但是直接import jinja的实现会更简单一些</li>
+<li>对于每个sls的执行逻辑是先执行jinja渲染，再执行yaml的方式，类似c语言中的编译预处理，而非根据实际代码出现的先后顺序执行。一定要注意这个逻辑上的区别</li>
+</ul>
 
       
     </div>
@@ -383,7 +392,7 @@
       
         <div class="post-tags">
           
-            <a href="/tags/zabbix/" rel="tag"># zabbix</a>
+            <a href="/tags/saltstack/" rel="tag"># saltstack</a>
           
         </div>
       
@@ -392,15 +401,15 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
+              <a href="/2019/02/08/saltstack3/" rel="next" title="saltstack中的设计模式(三)">
+                <i class="fa fa-chevron-left"></i> saltstack中的设计模式(三)
+              </a>
+            
           </div>
 
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2016/11/21/bplustree/" rel="prev" title="b树和b+树">
-                b树和b+树 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -447,8 +456,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview sidebar-panel sidebar-panel-active">
+      <section class="site-overview sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
           <img class="site-author-image" itemprop="image"
                src="/images/avatar.jpg"
@@ -504,6 +522,22 @@
 
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#为通过salt部署的服务打上标签"><span class="nav-number">1.</span> <span class="nav-text">为通过salt部署的服务打上标签</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#实现方案"><span class="nav-number">1.1.</span> <span class="nav-text">实现方案</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结"><span class="nav-number">2.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
     </div>
