@@ -251,6 +251,165 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/12/saltstack6/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="thuhak">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.jpg">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="fightclub">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="fightclub" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                
+                <a class="post-title-link" href="/2019/02/12/saltstack6/" itemprop="url">
+                  saltstack中的设计模式(六)
+                </a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-12T07:50:47+08:00">
+                2019-02-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/saltstack/" itemprop="url" rel="index">
+                    <span itemprop="name">saltstack</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>在今天我们介绍使用pillar进行参数化sls的方法，以及pillar数据结构设计的一般模式。<br>案例如下：</p>
+<h3 id="为通过saltstack部署的mariadb提供个性化配置"><a href="#为通过saltstack部署的mariadb提供个性化配置" class="headerlink" title="为通过saltstack部署的mariadb提供个性化配置"></a>为通过saltstack部署的mariadb提供个性化配置</h3><p>在salt中，主要使用pillar来存储动态信息。在sls中，在第一次渲染中提取出动态信息的值，编译成sls的执行指令进行第二道程序执行。</p>
+<p><code>/srv/salt/services/mariadb/init.sls</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div></pre></td><td class="code"><pre><div class="line">&#123;% from <span class="string">"macros/setrole.sls"</span> import setrole %&#125;</div><div class="line">&#123;&#123; setrole(<span class="string">"mariadb"</span>) &#125;&#125;</div><div class="line"></div><div class="line"><span class="attr">include:</span></div><div class="line"><span class="bullet">  -</span> system.pkgrepos.mariadb</div><div class="line"><span class="bullet">  -</span> .zabbix</div><div class="line"></div><div class="line"><span class="attr">mariadb:</span></div><div class="line">  pkg.installed:</div><div class="line"><span class="attr">    - allow_updates:</span> <span class="literal">True</span></div><div class="line"><span class="attr">    - pkgs:</span></div><div class="line"><span class="bullet">      -</span> MariaDB-server</div><div class="line"><span class="bullet">      -</span> MariaDB-client</div><div class="line"><span class="bullet">      -</span> MariaDB-shared</div><div class="line"><span class="bullet">      -</span> MariaDB-connect-engine</div><div class="line"><span class="bullet">      -</span> MariaDB-backup</div><div class="line">      <span class="comment"># - mariadb-Galera-server</span></div><div class="line">      <span class="comment"># - galera</span></div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - pkgrepo:</span> mariadb-repo</div><div class="line"></div><div class="line"><span class="attr">mariadb-datadir:</span></div><div class="line">  file.directory:</div><div class="line"><span class="attr">    - name:</span> /data/mariadb/data</div><div class="line"><span class="attr">    - user:</span> mysql</div><div class="line"><span class="attr">    - group:</span> mysql</div><div class="line"><span class="attr">    - dir_mode:</span> <span class="number">750</span></div><div class="line"><span class="attr">    - makedirs:</span> <span class="literal">True</span></div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - pkg:</span> mariadb</div><div class="line"></div><div class="line"><span class="attr">mariadb-tmpdir:</span></div><div class="line">  file.directory:</div><div class="line"><span class="attr">    - name:</span> /data/mariadb/tmp</div><div class="line"><span class="attr">    - user:</span> mysql</div><div class="line"><span class="attr">    - group:</span> mysql</div><div class="line"><span class="attr">    - dir_mode:</span> <span class="number">750</span></div><div class="line"><span class="attr">    - recurse:</span></div><div class="line"><span class="bullet">      -</span> user</div><div class="line"><span class="bullet">      -</span> group</div><div class="line"><span class="bullet">      -</span> mode</div><div class="line"><span class="attr">    - makedirs:</span> <span class="literal">True</span></div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - pkg:</span> mariadb</div><div class="line"></div><div class="line"><span class="attr">mariadb-innodbdir:</span></div><div class="line">  file.directory:</div><div class="line"><span class="attr">    - name:</span> /data/mariadb/innodb</div><div class="line"><span class="attr">    - user:</span> mysql</div><div class="line"><span class="attr">    - group:</span> mysql</div><div class="line"><span class="attr">    - dir_mode:</span> <span class="number">750</span></div><div class="line"><span class="attr">    - makedirs:</span> <span class="literal">True</span></div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - pkg:</span> mariadb</div><div class="line"></div><div class="line"><span class="attr">mariadb-file:</span></div><div class="line">  file.managed:</div><div class="line"><span class="attr">    - name:</span> /etc/my.cnf.d/server.cnf</div><div class="line"><span class="attr">    - source:</span> salt://&#123;&#123; slspath &#125;&#125;/templates/server.cnf</div><div class="line"><span class="attr">    - template:</span> jinja</div><div class="line"><span class="attr">    - backup:</span> minion</div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - pkg:</span> mariadb</div><div class="line"></div><div class="line"><span class="attr">mariadb-install-db:</span></div><div class="line">  cmd.run:</div><div class="line"><span class="attr">    - name:</span> <span class="string">"mysql_install_db --user=mysql --defaults-file=/etc/my.cnf.d/server.cnf"</span></div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - file:</span> /etc/my.cnf.d/server.cnf</div><div class="line"><span class="attr">    - unless:</span> <span class="string">"file -f /data/mariadb/innodb/ibdata1"</span></div><div class="line"></div><div class="line"><span class="attr">mariadb-service:</span></div><div class="line">  service.running:</div><div class="line"><span class="attr">    - name:</span> mariadb</div><div class="line"><span class="attr">    - enable:</span> <span class="literal">True</span></div><div class="line"><span class="attr">    - restart:</span> <span class="literal">True</span></div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - cmd:</span> mariadb-install-db</div><div class="line"><span class="attr">    - watch:</span></div><div class="line"><span class="attr">      - pkg:</span> mariadb</div><div class="line"><span class="attr">      - file:</span> /etc/my.cnf.d/server.cnf</div><div class="line"></div><div class="line"><span class="attr">mariadb-initialization:</span></div><div class="line">  cmd.run:</div><div class="line"><span class="attr">    - name:</span> <span class="string">"/usr/bin/mysql_upgrade;echo 'delete from mysql.user where host not in (\"localhost\", \"127.0.0.1\") or user != \"root\";drop database test;flush privileges;' | mysql -u root"</span></div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - service:</span> mariadb-service</div><div class="line"><span class="attr">    - unless:</span> <span class="string">"test -f /var/lib/mysql/initialization.lock"</span></div><div class="line">  file.managed:</div><div class="line"><span class="attr">    - name:</span> /var/lib/mysql/initialization.lock</div><div class="line"><span class="attr">    - user:</span> mysql</div><div class="line"><span class="attr">    - contents:</span></div><div class="line"><span class="bullet">      -</span> <span class="string">"This is the Initialization lock file for MariaDB."</span></div><div class="line"><span class="attr">    - onchanges:</span></div><div class="line"><span class="attr">      - cmd:</span> mariadb-initialization</div><div class="line"></div><div class="line">/etc/logrotate.d/mysql:</div><div class="line">  file.managed:</div><div class="line"><span class="attr">    - source:</span> salt://&#123;&#123; slspath &#125;&#125;/templates/log_rotate</div></pre></td></tr></table></figure>
+<p>我们把所有mariadb有关的的任务，都放在services.mariadb下面。 如果有其他额外的复杂功能，比如监控相关的，就在include下面直接链接即可。<br><code>/etc/my.cnf.d/server.cnf</code>这个文件引用了一个jinja的模版，我们用这个jinja模版实现了动态的配置参数，如下</p>
+<p><code>/srv/salt/services/mariadb/templates/server.cnf</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#Initialized by Salt</span></div><div class="line">&#123;%- set conf = salt[<span class="string">'pillar.get'</span>](<span class="string">'mariadb'</span>, &#123;&#125;) -%&#125;</div><div class="line">&#123;%- macro kvset(k, v) -%&#125;</div><div class="line">&#123;&#123; k &#125;&#125;=&#123;&#123; conf.get(k, v) &#125;&#125;</div><div class="line">&#123;%- endmacro %&#125;</div><div class="line">[server]</div><div class="line"></div><div class="line">[galera]</div><div class="line"></div><div class="line">[embedded]</div><div class="line"></div><div class="line">[mariadb]</div><div class="line"></div><div class="line">[mariadb<span class="bullet">-10.1</span>]</div><div class="line"></div><div class="line">[mysqld]</div><div class="line">bind-address=<span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span></div><div class="line">&#123;&#123; kvset(<span class="string">"general_log"</span>, <span class="number">1</span>) &#125;&#125;</div><div class="line">&#123;&#123; kvset(<span class="string">"general_log_file"</span>, <span class="string">"/data/mariadb/general.log"</span>) &#125;&#125;</div><div class="line">slow_query_log=<span class="number">1</span></div><div class="line">slow_query_log_file=/data/mariadb/slow_query_log.log</div><div class="line">slow_launch_time=<span class="number">2</span></div><div class="line">event_scheduler=<span class="number">1</span></div><div class="line">default_storage_engine=InnoDB</div><div class="line">character-set-client-handshake = <span class="literal">FALSE</span></div><div class="line">character-set-server = utf8mb4</div><div class="line">collation-server = utf8mb4_unicode_ci</div><div class="line"><span class="comment">#read-only=1</span></div><div class="line">&#123;&#123; kvset(<span class="string">'server-id'</span>, <span class="number">1</span>) &#125;&#125;</div><div class="line">sync_binlog=<span class="number">1</span></div><div class="line">skip_name_resolve=<span class="number">1</span></div><div class="line">log-bin=mysql-bin</div><div class="line">binlog_format = mixed</div><div class="line">expire_logs_days = <span class="number">3</span></div><div class="line">max_binlog_size = <span class="number">100</span>M</div><div class="line">relay-log=relay-log</div><div class="line">log-slave-updates=<span class="literal">true</span></div><div class="line">max_relay_log_size = <span class="number">100</span>M</div><div class="line">relay_log_purge=<span class="number">0</span></div><div class="line">relay_log_recovery=<span class="number">1</span></div><div class="line">master_verify_checksum = <span class="number">1</span></div><div class="line">slave_sql_verify_checksum = <span class="number">1</span></div><div class="line">port		= <span class="number">3306</span></div><div class="line">socket		= /var/lib/mysql/mysql.sock</div><div class="line">skip-external-locking</div><div class="line">key_buffer_size = &#123;&#123; (salt[<span class="string">'grains.get'</span>](<span class="string">'mem_total'</span>) * <span class="number">0.05</span>) | int &#125;&#125;M</div><div class="line">max_allowed_packet = <span class="number">64</span>M</div><div class="line">table_open_cache = <span class="number">16384</span></div><div class="line">sort_buffer_size = <span class="number">2</span>M</div><div class="line">read_buffer_size = <span class="number">2</span>M</div><div class="line">read_rnd_buffer_size = <span class="number">2</span>M</div><div class="line">myisam_sort_buffer_size = <span class="number">64</span>M</div><div class="line">thread_cache_size = <span class="number">32</span></div><div class="line">query_cache_size = <span class="number">0</span>M</div><div class="line">datadir = /data/mariadb/data</div><div class="line">tmpdir = /data/mariadb/tmp</div><div class="line">innodb_file_per_table=<span class="number">1</span></div><div class="line">innodb_data_home_dir = /data/mariadb/innodb</div><div class="line">innodb_data_file_path = ibdata1:<span class="number">256</span>M;ibdata2:<span class="number">256</span>M:autoextend</div><div class="line">innodb_autoextend_increment = <span class="number">64</span></div><div class="line">innodb_log_group_home_dir = /data/mariadb/innodb</div><div class="line">innodb_buffer_pool_size = &#123;&#123; (salt[<span class="string">'grains.get'</span>](<span class="string">'mem_total'</span>) * <span class="number">0.6</span>) | int &#125;&#125;M</div><div class="line">innodb_log_file_size = <span class="number">256</span>M</div><div class="line">innodb_log_buffer_size = <span class="number">4</span>M</div><div class="line">innodb_flush_log_at_trx_commit = <span class="number">1</span></div><div class="line">innodb_lock_wait_timeout = <span class="number">50</span></div><div class="line"></div><div class="line">lower_case_table_names = <span class="number">1</span></div><div class="line">max_connections = <span class="number">2048</span></div><div class="line">max_connect_errors = <span class="number">64</span></div><div class="line">log_bin_trust_function_creators = <span class="number">1</span></div><div class="line">&#123;&#123; kvset(<span class="string">"interactive_timeout"</span>, <span class="number">720</span>) &#125;&#125;</div><div class="line">&#123;&#123; kvset(<span class="string">"wait_timeout"</span>, <span class="number">720</span>) &#125;&#125;</div><div class="line"></div><div class="line">[mysqldump]</div><div class="line">quick</div><div class="line">max_allowed_packet = <span class="number">256</span>M</div><div class="line"></div><div class="line">[mysql]</div><div class="line"><span class="literal">no</span>-auto-rehash</div><div class="line"></div><div class="line">[myisamchk]</div><div class="line">key_buffer_size = <span class="number">256</span>M</div><div class="line">sort_buffer_size = <span class="number">256</span>M</div><div class="line">read_buffer = <span class="number">32</span>M</div><div class="line">write_buffer = <span class="number">32</span>M</div><div class="line"></div><div class="line">[mysqlhotcopy]</div><div class="line">interactive-timeout</div></pre></td></tr></table></figure>
+<p>我们在模版中，我们先从pillar中取出mariadb的嵌套数据，并根据需要的值在其中获取数据。对于每个pillar中的数据，我们都赋予一个默认值，这样在没有额外设置pillar的情况，就和静态版本的一致。</p>
+<p>注意到innodb_buffer_pool_size这个键的值，并不是在pillar中决定的，而是取自grains。对于根据系统情况决定的参数，都可以通过grain传进来。</p>
+<p>在这个模版做好以后，如果有变化部署的需求。我们可以将mariadb的参数的pillar赋予给对应的主机，来实现主机指定参数。</p>
+<p>以下几个实现方案都是不错的。</p>
+<ol>
+<li>用户通过执行salt-call state.sls services.mariadb pillar=”{‘k’: ‘v’}”的方式调用。这适用于一次性的个性化部署，无需salt管理员介入</li>
+<li>假设我们为一个项目或主机部署，那么我们在这台主机的pillar中设置mariadb的子参数</li>
+<li>我们可以使用pillar extension，比如基于rdbms或是etcd等的。可以单独设计UI，并和salt系统集成起来，实现paas平台</li>
+</ol>
+<p>无论怎样，我们都需要预留pillar中mariadb的key的位置，保留给该任务使用。假设我们常用的有几套参数，那么我们可以在pillar中按照名称放置几个参数组，例如创建目录<code>/srv/pillar/mariadb/</code>，在这个下面放置<code>parm_group1</code>,<code>parm_group2</code>等参数组，再把特定的参数组同主机关联起来即可实现参数组的享元。</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>任务设计的模式，主要取决于你想如何使用这个自动化任务。<br>任务设计的复杂程度，取决于应用场景的复杂成都。</p>
+<p>在今天这个场景中，该部署任务主要适用于执行半自动部署，也就是手工调用<code>salt xx state.sls services.mariadb</code>或者<code>salt-call state.sls services.mariadb</code>或者在其他自动化任务中通过include该任务执行部署的场景。</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
   <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/10/saltstack5/">
 
   <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -365,7 +524,7 @@
 <h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>这个案例内，主要运用到以下几个技巧：</p>
 <ul>
 <li>在使用include的时候，可以使用一个.带指当前目录</li>
-<li>如果换成salt://协议，可以使用带指当前目录</li>
+<li>如果换成salt://协议，可以使用<code></code>带指当前目录</li>
 <li>state的执行顺序可以通过REQUISITE参数进行重新编排。在配置文件切分很多份的时候，可以使用反向REQUISITE，也就是带后缀_in的参数实现解耦。</li>
 </ul>
 <p>state的用法可以参考<a href="https://docs.saltstack.com/en/latest/ref/states/index.html" target="_blank" rel="external">saltstack官方文档</a></p>
@@ -1806,184 +1965,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/11/21/heap/">
-
-  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <meta itemprop="name" content="thuhak">
-    <meta itemprop="description" content="">
-    <meta itemprop="image" content="/images/avatar.jpg">
-  </span>
-
-  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-    <meta itemprop="name" content="fightclub">
-    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
-      <img style="display:none;" itemprop="url image" alt="fightclub" src="">
-    </span>
-  </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-            
-            
-              
-                
-                <a class="post-title-link" href="/2016/11/21/heap/" itemprop="url">
-                  heap中的heapify与依次压入队列的差异
-                </a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2016-11-21T22:55:12+08:00">
-                2016-11-21
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/算法/" itemprop="url" rel="index">
-                    <span itemprop="name">算法</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-
-          
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>标准的堆插入元素的算法很好理解，而且也很容易知道向堆中插入一个元素的代价是lgn。</p>
-<p>按照最常规的想法，把一个数组中所有元素添加到一个堆中，依次压入即可。压入n个元素的代价就是</p>
-<p>$\sum_{i=1}^N\log_2i$</p>
-<p>结果等于$log_2n!$.根据斯特林公式，n!在n趋向于无穷大时可以近似看成$\sqrt{2\pi n} ({n\over e})^n$。</p>
-<p>因此，总代价可以看成$n \log_2({n\over e})+o(n)$,比O(n)的阶要大一些。</p>
-<p>直觉上，这个操作的复杂度应该是要比这个低的。因为将n个元素完整排序的代价不过是nlgn。而堆应该是一个半排序。不应该接近nlgn。</p>
-<p>这个直觉是正确的，heapify操作正是一个线性时间的算法.</p>
-<p>举个python的标准库heapq里面的实现</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">cmp_lt</span><span class="params">(x, y)</span>:</span></div><div class="line">    <span class="comment"># Use __lt__ if available; otherwise, try __le__.</span></div><div class="line">    <span class="comment"># In Py3.x, only __lt__ will be called.</span></div><div class="line">    <span class="keyword">return</span> (x &lt; y) <span class="keyword">if</span> hasattr(x, <span class="string">'__lt__'</span>) <span class="keyword">else</span> (<span class="keyword">not</span> y &lt;= x)</div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">heapify</span><span class="params">(x)</span>:</span></div><div class="line">    <span class="string">"""Transform list into a heap, in-place, in O(len(x)) time."""</span></div><div class="line">    n = len(x)</div><div class="line">    <span class="comment"># Transform bottom-up.  The largest index there's any point to looking at</span></div><div class="line">    <span class="comment"># is the largest with a child index in-range, so must have 2*i + 1 &lt; n,</span></div><div class="line">    <span class="comment"># or i &lt; (n-1)/2.  If n is even = 2*j, this is (2*j-1)/2 = j-1/2 so</span></div><div class="line">    <span class="comment"># j-1 is the largest, which is n//2 - 1.  If n is odd = 2*j+1, this is</span></div><div class="line">    <span class="comment"># (2*j+1-1)/2 = j so j-1 is the largest, and that's again n//2-1.</span></div><div class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> reversed(xrange(n//<span class="number">2</span>)):</div><div class="line">        _siftup(x, i)</div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">_siftdown</span><span class="params">(heap, startpos, pos)</span>:</span></div><div class="line">    newitem = heap[pos]</div><div class="line">    <span class="comment"># Follow the path to the root, moving parents down until finding a place</span></div><div class="line">    <span class="comment"># newitem fits.</span></div><div class="line">    <span class="keyword">while</span> pos &gt; startpos:</div><div class="line">        parentpos = (pos - <span class="number">1</span>) &gt;&gt; <span class="number">1</span></div><div class="line">        parent = heap[parentpos]</div><div class="line">        <span class="keyword">if</span> cmp_lt(newitem, parent):</div><div class="line">            heap[pos] = parent</div><div class="line">            pos = parentpos</div><div class="line">            <span class="keyword">continue</span></div><div class="line">        <span class="keyword">break</span></div><div class="line">    heap[pos] = newitem</div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">_siftup</span><span class="params">(heap, pos)</span>:</span></div><div class="line">    endpos = len(heap)</div><div class="line">    startpos = pos</div><div class="line">    newitem = heap[pos]</div><div class="line">    <span class="comment"># Bubble up the smaller child until hitting a leaf.</span></div><div class="line">    childpos = <span class="number">2</span>*pos + <span class="number">1</span>    <span class="comment"># leftmost child position</span></div><div class="line">    <span class="keyword">while</span> childpos &lt; endpos:</div><div class="line">        <span class="comment"># Set childpos to index of smaller child.</span></div><div class="line">        rightpos = childpos + <span class="number">1</span></div><div class="line">        <span class="keyword">if</span> rightpos &lt; endpos <span class="keyword">and</span> <span class="keyword">not</span> cmp_lt(heap[childpos], heap[rightpos]):</div><div class="line">            childpos = rightpos</div><div class="line">        <span class="comment"># Move the smaller child up.</span></div><div class="line">        heap[pos] = heap[childpos]</div><div class="line">        pos = childpos</div><div class="line">        childpos = <span class="number">2</span>*pos + <span class="number">1</span></div><div class="line">    <span class="comment"># The leaf at pos is empty now.  Put newitem there, and bubble it up</span></div><div class="line">    <span class="comment"># to its final resting place (by sifting its parents down).</span></div><div class="line">    heap[pos] = newitem</div><div class="line">    _siftdown(heap, startpos, pos)</div></pre></td></tr></table></figure>
-<p>heapify操作主要有3个过程，heapify对一半的元素调用_siftup，而_siftup又调用了_siftdown。</p>
-<p>这个过程作用的原理是什么？</p>
-<p>_siftup(heap，pos)最开始部分的代码很明显，就是把pos处的元素沿着最小路径一路向下降到底。途中所比较的子节点依次上浮一层。而_siftdown(heap,startpos,ps)过程则是标准的堆插入动作，将pos处的元素上浮直到小于startpos时停止，也就是startpos的左兄弟节点或上一层节点。</p>
-<p>这可以理解为一个从倒数第二层开始构建堆的过程。第一轮循环把最下面两层的3个节点的元素变成堆，再依次向上，通过插入一个上一层元素，将两个堆合并。因为每上一层，这层下面的两个元素分别都是这两棵子树的最小元素。</p>
-<p>这个过程可以看成类似数学归纳法的原理。第一个元素成立，而n成立确保n+1成立，因此对所有元素就成立。逐个插入的问题规模是线性增长的，比如比n小的元素是n-1，而归并操作的问题规模是折半的。这就相当于在逐次插入元素的时候，当插到第四个元素的时候，停止向原堆插入，而向新堆插入。当两个堆平衡以后，再将两个堆合并。</p>
-<p>因此，他的时间T(n)=2T(n/2)+2lg(n/2)</p>
-<p>这刚好落入了主方法的第一种情况，因此他的复杂度是O(n)</p>
-<p>举个7个元素的例子。x=[a,b,c,d,e,f,g]。单纯计算比较次数</p>
-<p>在最坏情况下，逐个插入算法</p>
-<ol>
-<li>插入a</li>
-<li>插入b,a与b比较一次</li>
-<li>插入c,a鱼c比较一次</li>
-<li>插入d,d与b比较一次，再与a比较一次</li>
-<li>插入e，e与b比较一次，再与a比较一次</li>
-<li>插入f,f与c比较一次,在与a比较一次</li>
-<li>插入g,g与c比较一次，再与a比较一次</li>
-</ol>
-<p>共计比较10次。</p>
-<p>而heapify算法：</p>
-<ol>
-<li>a与b、c各比较一次</li>
-<li>d与e、f各比较一次</li>
-<li>a与d比较一次</li>
-<li>g与a比较一次</li>
-<li>b与c比较一次</li>
-<li>g与b比较一次</li>
-</ol>
-<p>共计比较8次。</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -2031,7 +2012,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">12</span>
+                <span class="site-state-item-count">13</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>

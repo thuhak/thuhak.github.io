@@ -94,7 +94,7 @@
 <meta property="og:description" content="上一篇文章中，我们介绍了通过import jinja的方式进行代码的复用，这个场景并不是很常见。更为常见的场景是使用include来进行引用
 接下来是今天的案例
 为每个通过salt部署的服务提供定制化的监控我们通过salt部署了很多的服务，这些服务除了本身的配置以外，我们也希望为服务定制一些自定义zabbix监控脚本。我们通过services.zabbix进行zabbix的部署。每当我们部署新的服">
-<meta property="og:updated_time" content="2019-02-11T13:43:11.045Z">
+<meta property="og:updated_time" content="2019-02-11T23:59:30.399Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="saltstack中的设计模式(五)">
 <meta name="twitter:description" content="上一篇文章中，我们介绍了通过import jinja的方式进行代码的复用，这个场景并不是很常见。更为常见的场景是使用include来进行引用
@@ -365,7 +365,7 @@
 <h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>这个案例内，主要运用到以下几个技巧：</p>
 <ul>
 <li>在使用include的时候，可以使用一个.带指当前目录</li>
-<li>如果换成salt://协议，可以使用带指当前目录</li>
+<li>如果换成salt://协议，可以使用<code></code>带指当前目录</li>
 <li>state的执行顺序可以通过REQUISITE参数进行重新编排。在配置文件切分很多份的时候，可以使用反向REQUISITE，也就是带后缀_in的参数实现解耦。</li>
 </ul>
 <p>state的用法可以参考<a href="https://docs.saltstack.com/en/latest/ref/states/index.html" target="_blank" rel="external">saltstack官方文档</a></p>
@@ -410,6 +410,10 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/12/saltstack6/" rel="prev" title="saltstack中的设计模式(六)">
+                saltstack中的设计模式(六) <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -479,7 +483,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">12</span>
+                <span class="site-state-item-count">13</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>

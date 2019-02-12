@@ -1,0 +1,712 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="saltstack," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="在今天我们介绍使用pillar进行参数化sls的方法，以及pillar数据结构设计的一般模式。案例如下：
+为通过saltstack部署的mariadb提供个性化配置在salt中，主要使用pillar来存储动态信息。在sls中，在第一次渲染中提取出动态信息的值，编译成sls的执行指令进行第二道程序执行。
+/srv/salt/services/mariadb/init.sls
+123456789101">
+<meta property="og:type" content="article">
+<meta property="og:title" content="saltstack中的设计模式(六)">
+<meta property="og:url" content="http://yoursite.com/2019/02/12/saltstack6/index.html">
+<meta property="og:site_name" content="fightclub">
+<meta property="og:description" content="在今天我们介绍使用pillar进行参数化sls的方法，以及pillar数据结构设计的一般模式。案例如下：
+为通过saltstack部署的mariadb提供个性化配置在salt中，主要使用pillar来存储动态信息。在sls中，在第一次渲染中提取出动态信息的值，编译成sls的执行指令进行第二道程序执行。
+/srv/salt/services/mariadb/init.sls
+123456789101">
+<meta property="og:updated_time" content="2019-02-12T02:15:23.257Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="saltstack中的设计模式(六)">
+<meta name="twitter:description" content="在今天我们介绍使用pillar进行参数化sls的方法，以及pillar数据结构设计的一般模式。案例如下：
+为通过saltstack部署的mariadb提供个性化配置在salt中，主要使用pillar来存储动态信息。在sls中，在第一次渲染中提取出动态信息的值，编译成sls的执行指令进行第二道程序执行。
+/srv/salt/services/mariadb/init.sls
+123456789101">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/02/12/saltstack6/"/>
+
+
+
+
+
+  <title> saltstack中的设计模式(六) | fightclub </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">fightclub</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+    
+      <p class="site-subtitle">dont talk about it</p>
+    
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/12/saltstack6/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="thuhak">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.jpg">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="fightclub">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="fightclub" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                saltstack中的设计模式(六)
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-12T07:50:47+08:00">
+                2019-02-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/saltstack/" itemprop="url" rel="index">
+                    <span itemprop="name">saltstack</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>在今天我们介绍使用pillar进行参数化sls的方法，以及pillar数据结构设计的一般模式。<br>案例如下：</p>
+<h3 id="为通过saltstack部署的mariadb提供个性化配置"><a href="#为通过saltstack部署的mariadb提供个性化配置" class="headerlink" title="为通过saltstack部署的mariadb提供个性化配置"></a>为通过saltstack部署的mariadb提供个性化配置</h3><p>在salt中，主要使用pillar来存储动态信息。在sls中，在第一次渲染中提取出动态信息的值，编译成sls的执行指令进行第二道程序执行。</p>
+<p><code>/srv/salt/services/mariadb/init.sls</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div></pre></td><td class="code"><pre><div class="line">&#123;% from <span class="string">"macros/setrole.sls"</span> import setrole %&#125;</div><div class="line">&#123;&#123; setrole(<span class="string">"mariadb"</span>) &#125;&#125;</div><div class="line"></div><div class="line"><span class="attr">include:</span></div><div class="line"><span class="bullet">  -</span> system.pkgrepos.mariadb</div><div class="line"><span class="bullet">  -</span> .zabbix</div><div class="line"></div><div class="line"><span class="attr">mariadb:</span></div><div class="line">  pkg.installed:</div><div class="line"><span class="attr">    - allow_updates:</span> <span class="literal">True</span></div><div class="line"><span class="attr">    - pkgs:</span></div><div class="line"><span class="bullet">      -</span> MariaDB-server</div><div class="line"><span class="bullet">      -</span> MariaDB-client</div><div class="line"><span class="bullet">      -</span> MariaDB-shared</div><div class="line"><span class="bullet">      -</span> MariaDB-connect-engine</div><div class="line"><span class="bullet">      -</span> MariaDB-backup</div><div class="line">      <span class="comment"># - mariadb-Galera-server</span></div><div class="line">      <span class="comment"># - galera</span></div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - pkgrepo:</span> mariadb-repo</div><div class="line"></div><div class="line"><span class="attr">mariadb-datadir:</span></div><div class="line">  file.directory:</div><div class="line"><span class="attr">    - name:</span> /data/mariadb/data</div><div class="line"><span class="attr">    - user:</span> mysql</div><div class="line"><span class="attr">    - group:</span> mysql</div><div class="line"><span class="attr">    - dir_mode:</span> <span class="number">750</span></div><div class="line"><span class="attr">    - makedirs:</span> <span class="literal">True</span></div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - pkg:</span> mariadb</div><div class="line"></div><div class="line"><span class="attr">mariadb-tmpdir:</span></div><div class="line">  file.directory:</div><div class="line"><span class="attr">    - name:</span> /data/mariadb/tmp</div><div class="line"><span class="attr">    - user:</span> mysql</div><div class="line"><span class="attr">    - group:</span> mysql</div><div class="line"><span class="attr">    - dir_mode:</span> <span class="number">750</span></div><div class="line"><span class="attr">    - recurse:</span></div><div class="line"><span class="bullet">      -</span> user</div><div class="line"><span class="bullet">      -</span> group</div><div class="line"><span class="bullet">      -</span> mode</div><div class="line"><span class="attr">    - makedirs:</span> <span class="literal">True</span></div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - pkg:</span> mariadb</div><div class="line"></div><div class="line"><span class="attr">mariadb-innodbdir:</span></div><div class="line">  file.directory:</div><div class="line"><span class="attr">    - name:</span> /data/mariadb/innodb</div><div class="line"><span class="attr">    - user:</span> mysql</div><div class="line"><span class="attr">    - group:</span> mysql</div><div class="line"><span class="attr">    - dir_mode:</span> <span class="number">750</span></div><div class="line"><span class="attr">    - makedirs:</span> <span class="literal">True</span></div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - pkg:</span> mariadb</div><div class="line"></div><div class="line"><span class="attr">mariadb-file:</span></div><div class="line">  file.managed:</div><div class="line"><span class="attr">    - name:</span> /etc/my.cnf.d/server.cnf</div><div class="line"><span class="attr">    - source:</span> salt://&#123;&#123; slspath &#125;&#125;/templates/server.cnf</div><div class="line"><span class="attr">    - template:</span> jinja</div><div class="line"><span class="attr">    - backup:</span> minion</div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - pkg:</span> mariadb</div><div class="line"></div><div class="line"><span class="attr">mariadb-install-db:</span></div><div class="line">  cmd.run:</div><div class="line"><span class="attr">    - name:</span> <span class="string">"mysql_install_db --user=mysql --defaults-file=/etc/my.cnf.d/server.cnf"</span></div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - file:</span> /etc/my.cnf.d/server.cnf</div><div class="line"><span class="attr">    - unless:</span> <span class="string">"file -f /data/mariadb/innodb/ibdata1"</span></div><div class="line"></div><div class="line"><span class="attr">mariadb-service:</span></div><div class="line">  service.running:</div><div class="line"><span class="attr">    - name:</span> mariadb</div><div class="line"><span class="attr">    - enable:</span> <span class="literal">True</span></div><div class="line"><span class="attr">    - restart:</span> <span class="literal">True</span></div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - cmd:</span> mariadb-install-db</div><div class="line"><span class="attr">    - watch:</span></div><div class="line"><span class="attr">      - pkg:</span> mariadb</div><div class="line"><span class="attr">      - file:</span> /etc/my.cnf.d/server.cnf</div><div class="line"></div><div class="line"><span class="attr">mariadb-initialization:</span></div><div class="line">  cmd.run:</div><div class="line"><span class="attr">    - name:</span> <span class="string">"/usr/bin/mysql_upgrade;echo 'delete from mysql.user where host not in (\"localhost\", \"127.0.0.1\") or user != \"root\";drop database test;flush privileges;' | mysql -u root"</span></div><div class="line"><span class="attr">    - require:</span></div><div class="line"><span class="attr">      - service:</span> mariadb-service</div><div class="line"><span class="attr">    - unless:</span> <span class="string">"test -f /var/lib/mysql/initialization.lock"</span></div><div class="line">  file.managed:</div><div class="line"><span class="attr">    - name:</span> /var/lib/mysql/initialization.lock</div><div class="line"><span class="attr">    - user:</span> mysql</div><div class="line"><span class="attr">    - contents:</span></div><div class="line"><span class="bullet">      -</span> <span class="string">"This is the Initialization lock file for MariaDB."</span></div><div class="line"><span class="attr">    - onchanges:</span></div><div class="line"><span class="attr">      - cmd:</span> mariadb-initialization</div><div class="line"></div><div class="line">/etc/logrotate.d/mysql:</div><div class="line">  file.managed:</div><div class="line"><span class="attr">    - source:</span> salt://&#123;&#123; slspath &#125;&#125;/templates/log_rotate</div></pre></td></tr></table></figure>
+<p>我们把所有mariadb有关的的任务，都放在services.mariadb下面。 如果有其他额外的复杂功能，比如监控相关的，就在include下面直接链接即可。<br><code>/etc/my.cnf.d/server.cnf</code>这个文件引用了一个jinja的模版，我们用这个jinja模版实现了动态的配置参数，如下</p>
+<p><code>/srv/salt/services/mariadb/templates/server.cnf</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#Initialized by Salt</span></div><div class="line">&#123;%- set conf = salt[<span class="string">'pillar.get'</span>](<span class="string">'mariadb'</span>, &#123;&#125;) -%&#125;</div><div class="line">&#123;%- macro kvset(k, v) -%&#125;</div><div class="line">&#123;&#123; k &#125;&#125;=&#123;&#123; conf.get(k, v) &#125;&#125;</div><div class="line">&#123;%- endmacro %&#125;</div><div class="line">[server]</div><div class="line"></div><div class="line">[galera]</div><div class="line"></div><div class="line">[embedded]</div><div class="line"></div><div class="line">[mariadb]</div><div class="line"></div><div class="line">[mariadb<span class="bullet">-10.1</span>]</div><div class="line"></div><div class="line">[mysqld]</div><div class="line">bind-address=<span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span></div><div class="line">&#123;&#123; kvset(<span class="string">"general_log"</span>, <span class="number">1</span>) &#125;&#125;</div><div class="line">&#123;&#123; kvset(<span class="string">"general_log_file"</span>, <span class="string">"/data/mariadb/general.log"</span>) &#125;&#125;</div><div class="line">slow_query_log=<span class="number">1</span></div><div class="line">slow_query_log_file=/data/mariadb/slow_query_log.log</div><div class="line">slow_launch_time=<span class="number">2</span></div><div class="line">event_scheduler=<span class="number">1</span></div><div class="line">default_storage_engine=InnoDB</div><div class="line">character-set-client-handshake = <span class="literal">FALSE</span></div><div class="line">character-set-server = utf8mb4</div><div class="line">collation-server = utf8mb4_unicode_ci</div><div class="line"><span class="comment">#read-only=1</span></div><div class="line">&#123;&#123; kvset(<span class="string">'server-id'</span>, <span class="number">1</span>) &#125;&#125;</div><div class="line">sync_binlog=<span class="number">1</span></div><div class="line">skip_name_resolve=<span class="number">1</span></div><div class="line">log-bin=mysql-bin</div><div class="line">binlog_format = mixed</div><div class="line">expire_logs_days = <span class="number">3</span></div><div class="line">max_binlog_size = <span class="number">100</span>M</div><div class="line">relay-log=relay-log</div><div class="line">log-slave-updates=<span class="literal">true</span></div><div class="line">max_relay_log_size = <span class="number">100</span>M</div><div class="line">relay_log_purge=<span class="number">0</span></div><div class="line">relay_log_recovery=<span class="number">1</span></div><div class="line">master_verify_checksum = <span class="number">1</span></div><div class="line">slave_sql_verify_checksum = <span class="number">1</span></div><div class="line">port		= <span class="number">3306</span></div><div class="line">socket		= /var/lib/mysql/mysql.sock</div><div class="line">skip-external-locking</div><div class="line">key_buffer_size = &#123;&#123; (salt[<span class="string">'grains.get'</span>](<span class="string">'mem_total'</span>) * <span class="number">0.05</span>) | int &#125;&#125;M</div><div class="line">max_allowed_packet = <span class="number">64</span>M</div><div class="line">table_open_cache = <span class="number">16384</span></div><div class="line">sort_buffer_size = <span class="number">2</span>M</div><div class="line">read_buffer_size = <span class="number">2</span>M</div><div class="line">read_rnd_buffer_size = <span class="number">2</span>M</div><div class="line">myisam_sort_buffer_size = <span class="number">64</span>M</div><div class="line">thread_cache_size = <span class="number">32</span></div><div class="line">query_cache_size = <span class="number">0</span>M</div><div class="line">datadir = /data/mariadb/data</div><div class="line">tmpdir = /data/mariadb/tmp</div><div class="line">innodb_file_per_table=<span class="number">1</span></div><div class="line">innodb_data_home_dir = /data/mariadb/innodb</div><div class="line">innodb_data_file_path = ibdata1:<span class="number">256</span>M;ibdata2:<span class="number">256</span>M:autoextend</div><div class="line">innodb_autoextend_increment = <span class="number">64</span></div><div class="line">innodb_log_group_home_dir = /data/mariadb/innodb</div><div class="line">innodb_buffer_pool_size = &#123;&#123; (salt[<span class="string">'grains.get'</span>](<span class="string">'mem_total'</span>) * <span class="number">0.6</span>) | int &#125;&#125;M</div><div class="line">innodb_log_file_size = <span class="number">256</span>M</div><div class="line">innodb_log_buffer_size = <span class="number">4</span>M</div><div class="line">innodb_flush_log_at_trx_commit = <span class="number">1</span></div><div class="line">innodb_lock_wait_timeout = <span class="number">50</span></div><div class="line"></div><div class="line">lower_case_table_names = <span class="number">1</span></div><div class="line">max_connections = <span class="number">2048</span></div><div class="line">max_connect_errors = <span class="number">64</span></div><div class="line">log_bin_trust_function_creators = <span class="number">1</span></div><div class="line">&#123;&#123; kvset(<span class="string">"interactive_timeout"</span>, <span class="number">720</span>) &#125;&#125;</div><div class="line">&#123;&#123; kvset(<span class="string">"wait_timeout"</span>, <span class="number">720</span>) &#125;&#125;</div><div class="line"></div><div class="line">[mysqldump]</div><div class="line">quick</div><div class="line">max_allowed_packet = <span class="number">256</span>M</div><div class="line"></div><div class="line">[mysql]</div><div class="line"><span class="literal">no</span>-auto-rehash</div><div class="line"></div><div class="line">[myisamchk]</div><div class="line">key_buffer_size = <span class="number">256</span>M</div><div class="line">sort_buffer_size = <span class="number">256</span>M</div><div class="line">read_buffer = <span class="number">32</span>M</div><div class="line">write_buffer = <span class="number">32</span>M</div><div class="line"></div><div class="line">[mysqlhotcopy]</div><div class="line">interactive-timeout</div></pre></td></tr></table></figure>
+<p>我们在模版中，我们先从pillar中取出mariadb的嵌套数据，并根据需要的值在其中获取数据。对于每个pillar中的数据，我们都赋予一个默认值，这样在没有额外设置pillar的情况，就和静态版本的一致。</p>
+<p>注意到innodb_buffer_pool_size这个键的值，并不是在pillar中决定的，而是取自grains。对于根据系统情况决定的参数，都可以通过grain传进来。</p>
+<p>在这个模版做好以后，如果有变化部署的需求。我们可以将mariadb的参数的pillar赋予给对应的主机，来实现主机指定参数。</p>
+<p>以下几个实现方案都是不错的。</p>
+<ol>
+<li>用户通过执行salt-call state.sls services.mariadb pillar=”{‘k’: ‘v’}”的方式调用。这适用于一次性的个性化部署，无需salt管理员介入</li>
+<li>假设我们为一个项目或主机部署，那么我们在这台主机的pillar中设置mariadb的子参数</li>
+<li>我们可以使用pillar extension，比如基于rdbms或是etcd等的。可以单独设计UI，并和salt系统集成起来，实现paas平台</li>
+</ol>
+<p>无论怎样，我们都需要预留pillar中mariadb的key的位置，保留给该任务使用。假设我们常用的有几套参数，那么我们可以在pillar中按照名称放置几个参数组，例如创建目录<code>/srv/pillar/mariadb/</code>，在这个下面放置<code>parm_group1</code>,<code>parm_group2</code>等参数组，再把特定的参数组同主机关联起来即可实现参数组的享元。</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>任务设计的模式，主要取决于你想如何使用这个自动化任务。<br>任务设计的复杂程度，取决于应用场景的复杂成都。</p>
+<p>在今天这个场景中，该部署任务主要适用于执行半自动部署，也就是手工调用<code>salt xx state.sls services.mariadb</code>或者<code>salt-call state.sls services.mariadb</code>或者在其他自动化任务中通过include该任务执行部署的场景。</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/saltstack/" rel="tag"># saltstack</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/10/saltstack5/" rel="next" title="saltstack中的设计模式(五)">
+                <i class="fa fa-chevron-left"></i> saltstack中的设计模式(五)
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.jpg"
+               alt="thuhak" />
+          <p class="site-author-name" itemprop="name">thuhak</p>
+          <p class="site-description motion-element" itemprop="description">hit me as hard as you can</p>
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">13</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">6</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">12</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#为通过saltstack部署的mariadb提供个性化配置"><span class="nav-number">1.</span> <span class="nav-text">为通过saltstack部署的mariadb提供个性化配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结"><span class="nav-number">2.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">thuhak</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+  
+  
+
+  
+  
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for (i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+      });
+    </script>
+    <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  
+
+
+  
+
+  
+
+  
+
+
+</body>
+</html>
