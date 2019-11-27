@@ -68,7 +68,7 @@
 <link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Hexo, NexT" />
+  <meta name="keywords" content="python," />
 
 
 
@@ -102,7 +102,7 @@
 在任务提交前根据当前队列的状态，优化提交参数
 
 这是一个简单的需求。我个人比较喜欢argparse这个库">
-<meta property="og:updated_time" content="2019-11-27T03:32:30.934Z">
+<meta property="og:updated_time" content="2019-11-27T04:54:05.504Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="一个模块化的命令行解析器实现方案">
 <meta name="twitter:description" content="问题背景大约在上个月，有这样一个需求，需要为HPC的用户提供一个统一的任务提交脚本。用户可以使用这个脚本提交任务计算。我们实际使用的任务调度系统是PBSpro。因此这个主要的功能是:
@@ -318,6 +318,28 @@
           </span>
 
           
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/程序设计/" itemprop="url" rel="index">
+                    <span itemprop="name">程序设计</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
 
           
             
@@ -373,9 +395,9 @@
 <li>实现一个公共库，把公共解析器以及公共函数放在里面。再将各个软件当作插件装载进来。这个方案需要解决的问题打乱插件的代码顺序，先执行所有parser的注册，最后根据用户输入参数的解析，将请求路由到恰当的插件里</li>
 </ul>
 <p>今天要讲的，就是第二种方案的一种实现</p>
-<h2 id="initsubclass-魔术方法介绍"><a href="#initsubclass-魔术方法介绍" class="headerlink" title="__initsubclass\_魔术方法介绍"></a>__init<em>subclass\</em>_魔术方法介绍</h2><p>在这个方案中，使用了__init<em>subclass\</em>_这个实现子类的注册和回调。因此我们首先需要了解一下__init<em>subclass\</em>_的作用和使用方法。</p>
-<p>__init<em>subclass\</em>_是python3.6引入的一个新的魔术方法。使用这个魔术方法，可以在子类定义的过程中作为钩子被调用，作用机制和元类相似。最大的区别就是这个魔术方法只在子类构建的时候被调用，父类是不会调用的。实际用起来更为简洁，编程体验也更好。元类说到底，还是有些麻烦的。而且更为重要的是，这个魔术方法可以和元类一起使用，不会产生冲突。经常使用元类编程的同学遇到的问题可能就是无法同时使用两种元类，有了这个魔术方法，代码设计上又增加了很大的灵活性。</p>
-<p>现在我们举个具体的例子来说明__init<em>subclass\</em>_是如何使用的。</p>
+<h2 id="init-subclass-魔术方法介绍"><a href="#init-subclass-魔术方法介绍" class="headerlink" title="__init_subclass__魔术方法介绍"></a>__init_subclass__魔术方法介绍</h2><p>在这个方案中，使用了__init<em>subclass__这个实现子类的注册和回调。因此我们首先需要了解一下\</em>_init_subclass__的作用和使用方法。</p>
+<p>__init_subclass__是python3.6引入的一个新的魔术方法。使用这个魔术方法，可以在子类定义的过程中作为钩子被调用，作用机制和元类相似。最大的区别就是这个魔术方法只在子类构建的时候被调用，父类是不会调用的。实际用起来更为简洁，编程体验也更好。元类说到底，还是有些麻烦的。而且更为重要的是，这个魔术方法可以和元类一起使用，不会产生冲突。经常使用元类编程的同学遇到的问题可能就是无法同时使用两种元类，有了这个魔术方法，代码设计上又增加了很大的灵活性。</p>
+<p>现在我们举个具体的例子来说明__init_subclass__是如何使用的。</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">MetaData</span><span class="params">(type)</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(cls, clsname, bases, clsdict)</span>:</span></div><div class="line">        super().__init__(clsname, bases, clsdict)   <span class="comment"># 可以操作cls</span></div><div class="line">        print(<span class="string">'meta class'</span>)</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span><span class="params">(metaclass=MetaData)</span>:</span></div><div class="line">    data = <span class="string">'A'</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__new__</span><span class="params">(cls, *args, **kwargs)</span>:</span></div><div class="line">        print(<span class="string">'running new'</span>)</div><div class="line">        <span class="keyword">return</span> super().__new__(cls, *args, **kwargs) <span class="comment">#返回实例对象</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init_subclass__</span><span class="params">(cls, *args, **kwargs)</span>:</span></div><div class="line">        print(<span class="string">'running init_subclass'</span>)               <span class="comment">#可以操作cls</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, *args, **kwargs)</span>:</span></div><div class="line">        print(<span class="string">'running init'</span>)</div></pre></td></tr></table></figure>
 <p>我们先定义一个元类，以及一个使用该元类的类A,输出结果为</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">meta class</div></pre></td></tr></table></figure>
@@ -383,34 +405,34 @@
 <figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span><span class="params">(A)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
 <p>我们用A作为父类创建一个子类B，输出结果为:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
-<p>从输出的结果来看，调用的顺序是先调用__init<em>subclass\</em>_,再调用元类。</p>
+<p>从输出的结果来看，调用的顺序是先调用__init_subclass__,再调用元类。</p>
 <p>我们再创建一个实例看看：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">b = B()</div></pre></td></tr></table></figure>
 <p>输出结果为：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running new</div><div class="line">running init</div></pre></td></tr></table></figure>
-<p>这个表现符合预期，没什么多说的。我们再用B为父类创建一个孙子类来看看__init<em>subclass\</em>_是否会执行</p>
+<p>这个表现符合预期，没什么多说的。我们再用B为父类创建一个孙子类来看看__init_subclass__是否会执行</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">C</span><span class="params">(B)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
 <p>输出结果为</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
-<p>可以看到，执行结果和B一样,说明__init<em>subclass\</em>_是可以传递的。我们再来试试方法重写</p>
+<p>可以看到，执行结果和B一样,说明__init_subclass__是可以传递的。我们再来试试方法重写</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">D</span><span class="params">(A)</span>:</span></div><div class="line">  <span class="function"><span class="keyword">def</span> <span class="title">__init_subclass__</span><span class="params">(cls, *args, **kwargs)</span>:</span></div><div class="line">    print(<span class="string">'rewrite'</span>)</div><div class="line">    super().__init_subclass__(cls, *args, **kwargs)</div></pre></td></tr></table></figure>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">F</span><span class="params">(D)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
 <p>执行结果为：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rewrite</div><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
-<p>可以看到，__init<em>subclass\</em>_可以像常规的的方法一样实现重写。我们再来试试多重继承：</p>
+<p>可以看到，__init_subclass__可以像常规的的方法一样实现重写。我们再来试试多重继承：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">E</span>:</span></div><div class="line">  <span class="function"><span class="keyword">def</span> <span class="title">__init_subclass__</span><span class="params">(cls, *args, **kwargs)</span>:</span></div><div class="line">    print(<span class="string">'other init subclass'</span>)</div><div class="line">    super().__init_subclass__(cls, *args, **kwargs)</div></pre></td></tr></table></figure>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">G</span><span class="params">(A, E)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
 <p>执行结果为:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
-<p>E中的__init<em>subclass\</em>_并没有执行，但是并没有有冲突错误。</p>
+<p>E中的__init_subclass__并没有执行，但是并没有有冲突错误。</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">H</span><span class="params">(E, A)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
 <p>执行结果为</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">other init subclass</div><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
-<p>因为使用了supper()，A中的__init<em>subclass\</em>_得到了执行。看起来，多重继承的表现和普通的方法没什么两样。</p>
-<p>经过一系列实验，最后得到的结论是在同时使用metaclass、__init<em>subclass\</em>_, __new__与__init__的时候。在类的构建期依次调用__init<em>subclass\</em>_,与metaclass，而在实例构建的时候，依次调用__new__与__init__。</p>
-<p>而__init<em>subclass\</em>_的特性，和普通的方法区别不大。如果想有更多的了解，可以进一步参考<a href="https://www.python.org/dev/peps/pep-0487/" target="_blank" rel="external">PEP 487</a></p>
-<h2 id="利用-initsubclass-实现注册和回调机制"><a href="#利用-initsubclass-实现注册和回调机制" class="headerlink" title="利用__initsubclass\_实现注册和回调机制"></a>利用__init<em>subclass\</em>_实现注册和回调机制</h2><p>说完了__init<em>subclass\</em>_的用法以后，我们再具体看一下在这个实际案例中，如何利用这个魔术方法的特性，实现代码的解藕。</p>
+<p>因为使用了supper()，A中的__init_subclass__得到了执行。看起来，多重继承的表现和普通的方法没什么两样。</p>
+<p>经过一系列实验，最后得到的结论是在同时使用metaclass、__init<em>subclass__, \</em>_new<strong>与__init</strong>的时候。在类的构建期依次调用__init<em>subclass__,与metaclass，而在实例构建的时候，依次调用\</em>_new<strong>与__init</strong>。</p>
+<p>而__init_subclass__的特性，和普通的方法区别不大。如果想有更多的了解，可以进一步参考<a href="https://www.python.org/dev/peps/pep-0487/" target="_blank" rel="external">PEP 487</a></p>
+<h2 id="利用-init-subclass-实现注册和回调机制"><a href="#利用-init-subclass-实现注册和回调机制" class="headerlink" title="利用__init_subclass__实现注册和回调机制"></a>利用__init_subclass__实现注册和回调机制</h2><p>说完了__init_subclass__的用法以后，我们再具体看一下在这个实际案例中，如何利用这个魔术方法的特性，实现代码的解藕。</p>
 <p>先上代码：</p>
 <p><strong>pbs_sub.py</strong></p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#!/usr/bin/env python3.6</span></div><div class="line"><span class="keyword">from</span> software <span class="keyword">import</span> MainParser</div><div class="line"></div><div class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</div><div class="line">    parser = MainParser()</div><div class="line">    parser.run()</div></pre></td></tr></table></figure>
@@ -425,7 +447,7 @@
 <p>公共的逻辑被放置到了MainParser中，而powerflow的业务逻辑，则被独立开来，放置到了一个单独的文件内。并通过类的继承，复用了公用的类的方法，变量，以及数据缓存。</p>
 <p>整个软件的逻辑如下:</p>
 <ol>
-<li>在MainParser类中，通过__init<em>subclass\</em>_,在类还在创建过程中，就将整个类对象放置到自己的全局字典中。而类创建代码，则是在import的时候执行</li>
+<li>在MainParser类中，通过__init_subclass__,在类还在创建过程中，就将整个类对象放置到自己的全局字典中。而类创建代码，则是在import的时候执行</li>
 <li>在MainPasrer进行实例初始化的时候，依次调用所有子类的add_parser方法，实现所有插件parser的注册</li>
 <li>最后在实例化的mainparser对象中，通过run方法，解析用户的输入，并路由给对应的插件handle处理方法。拿到对应handle的处理后，在进行下一道工序的处理</li>
 </ol>
@@ -462,13 +484,19 @@
 
     <footer class="post-footer">
       
+        <div class="post-tags">
+          
+            <a href="/tags/python/" rel="tag"># python</a>
+          
+        </div>
+      
 
       
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/02/12/saltstack7/" rel="next" title="saltstack7">
-                <i class="fa fa-chevron-left"></i> saltstack7
+              <a href="/2019/02/12/saltstack6/" rel="next" title="saltstack中的设计模式(六)">
+                <i class="fa fa-chevron-left"></i> saltstack中的设计模式(六)
               </a>
             
           </div>
@@ -545,7 +573,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">15</span>
+                <span class="site-state-item-count">14</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -554,7 +582,7 @@
           
             <div class="site-state-item site-state-categories">
               <a href="/categories">
-                <span class="site-state-item-count">6</span>
+                <span class="site-state-item-count">7</span>
                 <span class="site-state-item-name">分类</span>
               </a>
             </div>
@@ -598,7 +626,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#问题背景"><span class="nav-number">1.</span> <span class="nav-text">问题背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#initsubclass-魔术方法介绍"><span class="nav-number">2.</span> <span class="nav-text">__initsubclass\_魔术方法介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#利用-initsubclass-实现注册和回调机制"><span class="nav-number">3.</span> <span class="nav-text">利用__initsubclass\_实现注册和回调机制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#问题背景"><span class="nav-number">1.</span> <span class="nav-text">问题背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#init-subclass-魔术方法介绍"><span class="nav-number">2.</span> <span class="nav-text">__init_subclass__魔术方法介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#利用-init-subclass-实现注册和回调机制"><span class="nav-number">3.</span> <span class="nav-text">利用__init_subclass__实现注册和回调机制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
             
 
           </div>
