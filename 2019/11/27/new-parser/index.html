@@ -1,0 +1,772 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="问题背景大约在上个月，有这样一个需求，需要为HPC的用户提供一个统一的任务提交脚本。用户可以使用这个脚本提交任务计算。我们实际使用的任务调度系统是PBSpro。因此这个主要的功能是:
+
+为各种不同的计算软件提供一个一致的入口，对复杂的pbs提交参数进行检测
+在任务提交前对用户参数进行校验和检查
+在任务提交前根据当前队列的状态，优化提交参数
+
+这是一个简单的需求。我个人比较喜欢argparse这个库">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一个模块化的命令行解析器实现方案">
+<meta property="og:url" content="http://yoursite.com/2019/11/27/new-parser/index.html">
+<meta property="og:site_name" content="fightclub">
+<meta property="og:description" content="问题背景大约在上个月，有这样一个需求，需要为HPC的用户提供一个统一的任务提交脚本。用户可以使用这个脚本提交任务计算。我们实际使用的任务调度系统是PBSpro。因此这个主要的功能是:
+
+为各种不同的计算软件提供一个一致的入口，对复杂的pbs提交参数进行检测
+在任务提交前对用户参数进行校验和检查
+在任务提交前根据当前队列的状态，优化提交参数
+
+这是一个简单的需求。我个人比较喜欢argparse这个库">
+<meta property="og:updated_time" content="2019-11-27T03:32:30.934Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="一个模块化的命令行解析器实现方案">
+<meta name="twitter:description" content="问题背景大约在上个月，有这样一个需求，需要为HPC的用户提供一个统一的任务提交脚本。用户可以使用这个脚本提交任务计算。我们实际使用的任务调度系统是PBSpro。因此这个主要的功能是:
+
+为各种不同的计算软件提供一个一致的入口，对复杂的pbs提交参数进行检测
+在任务提交前对用户参数进行校验和检查
+在任务提交前根据当前队列的状态，优化提交参数
+
+这是一个简单的需求。我个人比较喜欢argparse这个库">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/11/27/new-parser/"/>
+
+
+
+
+
+  <title> 一个模块化的命令行解析器实现方案 | fightclub </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">fightclub</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+    
+      <p class="site-subtitle">dont talk about it</p>
+    
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/27/new-parser/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="thuhak">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.jpg">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="fightclub">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="fightclub" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                一个模块化的命令行解析器实现方案
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-11-27T11:31:17+08:00">
+                2019-11-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>大约在上个月，有这样一个需求，需要为HPC的用户提供一个统一的任务提交脚本。用户可以使用这个脚本提交任务计算。我们实际使用的任务调度系统是PBSpro。因此这个主要的功能是:</p>
+<ul>
+<li>为各种不同的计算软件提供一个一致的入口，对复杂的pbs提交参数进行检测</li>
+<li>在任务提交前对用户参数进行校验和检查</li>
+<li>在任务提交前根据当前队列的状态，优化提交参数</li>
+</ul>
+<p>这是一个简单的需求。我个人比较喜欢argparse这个库。能够很容易实现各种模式的命令行参数。当然也有一些同学喜欢click, Fire或者是optparse,今天就不多做讨论了。</p>
+<p>最初的版本大概是这样子的</p>
+<p><strong>pbs_sub.py</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> os</div><div class="line"><span class="keyword">from</span> glob <span class="keyword">import</span> glob</div><div class="line"><span class="keyword">from</span> argparse <span class="keyword">import</span> ArgumentParser</div><div class="line"><span class="keyword">from</span> copy <span class="keyword">import</span> deepcopy</div><div class="line"><span class="keyword">import</span> logging</div><div class="line"><span class="keyword">import</span> json</div><div class="line"><span class="keyword">import</span> random</div><div class="line"><span class="keyword">import</span> pwd</div><div class="line"></div><div class="line"><span class="keyword">import</span> sh</div><div class="line"></div><div class="line">__version__ = <span class="string">'1.1.0'</span></div><div class="line"></div><div class="line">PBS_SERVER = <span class="string">'p-shhq-hpc-pbs-m01'</span></div><div class="line">QSUB = sh.Command(<span class="string">'/opt/pbs/bin/qsub'</span>)</div><div class="line">PBSNODES = sh.Command(<span class="string">'/opt/pbs/bin/pbsnodes'</span>)</div><div class="line">powerflow_run = <span class="string">'/home/hpcsw/PBSsubmit/run.powerflow2'</span></div><div class="line">dis_run = <span class="string">'/home/hpcsw/PBSsubmit/run.dis2'</span></div><div class="line"></div><div class="line">logger = logging.getLogger(<span class="string">'pbs_sub'</span>)</div><div class="line"></div><div class="line"><span class="comment"># 一些公共函数</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">free_cores</span><span class="params">(queue)</span>:</span></div><div class="line">    <span class="string">"""</span></div><div class="line">    free cores in queue</div><div class="line">    """</div><div class="line">    count = <span class="number">0</span></div><div class="line">    logger.debug(f<span class="string">'getting free cores in &#123;queue&#125;'</span>)</div><div class="line">    <span class="keyword">try</span>:</div><div class="line">        raw_nodedata = json.loads(PBSNODES(<span class="string">'-aS'</span>, <span class="string">'-F'</span>, <span class="string">'json'</span>).stdout)[<span class="string">'nodes'</span>]</div><div class="line">        raw_nodedata2 = json.loads(PBSNODES(<span class="string">'-Saj'</span>, <span class="string">'-F'</span>, <span class="string">'json'</span>).stdout)[<span class="string">'nodes'</span>]</div><div class="line">    <span class="keyword">except</span>:</div><div class="line">        logger.error(<span class="string">'PBS error, can not get pbs info'</span>)</div><div class="line">        exit(<span class="number">-1</span>)</div><div class="line">    <span class="keyword">for</span> k, v <span class="keyword">in</span> raw_nodedata.items():</div><div class="line">        <span class="keyword">if</span> v.get(<span class="string">'queue'</span>) != queue:</div><div class="line">            <span class="keyword">continue</span></div><div class="line">        <span class="keyword">else</span>:</div><div class="line">            core_free = int(raw_nodedata2[k].get(<span class="string">'ncpus f/t'</span>).split(<span class="string">'/'</span>)[<span class="number">0</span>])</div><div class="line">            count += core_free</div><div class="line">    logger.debug(f<span class="string">'number of free cores in &#123;queue&#125; is &#123;count&#125;'</span>)</div><div class="line">    <span class="keyword">return</span> count</div><div class="line"></div><div class="line"><span class="comment"># 公共命令行参数</span></div><div class="line">parser = ArgumentParser(description=__doc__,</div><div class="line">                        epilog=<span class="string">'if you have any question or suggestion, please contact with thuhak.zhou@nio.com'</span>)</div><div class="line">parser.add_argument(<span class="string">'-n'</span>, <span class="string">'--name'</span>, help=<span class="string">'job name'</span>)</div><div class="line">parser.add_argument(<span class="string">'-l'</span>, <span class="string">'--log_level'</span>, choices=[<span class="string">'error'</span>, <span class="string">'info'</span>, <span class="string">'debug'</span>], default=<span class="string">'info'</span>, help=<span class="string">'logging level'</span>)</div><div class="line">parser.add_argument(<span class="string">'-W'</span>, <span class="string">'--wait'</span>, metavar=<span class="string">'JOB_ID'</span>, help=<span class="string">'depend on which job'</span>)</div><div class="line">software = parser.add_subparsers(dest=<span class="string">'software'</span>, help=<span class="string">'supported software'</span>)</div><div class="line"></div><div class="line"><span class="comment"># powerflow 软件的命令行参数</span></div><div class="line">powerflow = software.add_parser(<span class="string">'powerflow'</span>, help=<span class="string">'powerflow'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'-q'</span>, <span class="string">'--queue'</span>, choices=[<span class="string">"cfd"</span>, <span class="string">"cfd2"</span>, <span class="string">"cfdbs"</span>], required=<span class="keyword">True</span>, help=<span class="string">'queue of job'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'-o'</span>, <span class="string">'--outdir'</span>, help=<span class="string">'output directory, default is as same as jobfile'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'-c'</span>, <span class="string">'--core'</span>, type=int, choices=[<span class="number">32</span>, <span class="number">64</span>, <span class="number">128</span>, <span class="number">256</span>, <span class="number">512</span>, <span class="number">768</span>, <span class="number">1024</span>],</div><div class="line">                       help=<span class="string">'how many cpu cores you wanna use. default value is half of the free cores in your queue'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'jobfile'</span>, help=<span class="string">'job file'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'-v'</span>, <span class="string">'--version'</span>, choices=[<span class="string">"4.4d"</span>, <span class="string">"5.3b"</span>, <span class="string">"5.3c"</span>, <span class="string">"5.4b"</span>, <span class="string">"5.5a"</span>, <span class="string">"5.5c"</span>, <span class="string">"5.5c2"</span>, <span class="string">"6-2019"</span>],</div><div class="line">                       default=<span class="string">"5.5b"</span>, help=<span class="string">'version of powerflow software'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'--nts'</span>, metavar=<span class="string">'TIMESTEPS'</span>, type=int, help=<span class="string">'num timesteps'</span>)</div><div class="line">pow_group = powerflow.add_mutually_exclusive_group()</div><div class="line">powerflow.add_argument(<span class="string">'--seed_bondaries'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'set seed_bondaries'</span>)</div><div class="line">pow_group.add_argument(<span class="string">'-r'</span>, <span class="string">'--resume'</span>, metavar=<span class="string">'RESUME_FILE'</span>, help=<span class="string">'resume file'</span>)</div><div class="line">pow_group.add_argument(<span class="string">'-s'</span>, <span class="string">'--seed'</span>, metavar=<span class="string">'SEED_FILE'</span>, help=<span class="string">'seed file'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'--mme'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'mme checkpoint at end'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'--full'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'full checkpoint at end'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'--pt'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'ptherm nprocs and ptherm max unmatched ratio'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'--dis'</span>, choices=[<span class="string">'only'</span>, <span class="string">'full'</span>],</div><div class="line">                       help=<span class="string">'run discretize, when you set only, just run dis job, if your set full, powerflow job will be run after dis job is finish'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'--vr'</span>, metavar=<span class="string">'LEVEL'</span>, type=int, help=<span class="string">'suppress vr level for discretize job'</span>)</div><div class="line"></div><div class="line"><span class="comment"># 其他软件参数位置</span></div><div class="line">other = software.add_parser(<span class="string">'other'</span>)</div><div class="line">...</div><div class="line"></div><div class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</div><div class="line">  	<span class="comment"># 公共的</span></div><div class="line">    uid = os.getuid()</div><div class="line">    user = pwd.getpwuid(uid)[<span class="number">0</span>]</div><div class="line">    email = user + <span class="string">'@nio.com'</span></div><div class="line">    args = parser.parse_args()</div><div class="line">    soft = args.software</div><div class="line">    waitfor = args.wait</div><div class="line">    log_level = getattr(logging, args.log_level.upper())</div><div class="line">    logging.basicConfig(level=log_level, format=<span class="string">'%(asctime)s [%(levelname)s]: %(message)s'</span>,</div><div class="line">                        datefmt=<span class="string">"%Y-%m-%d %H:%M:%S"</span>)</div><div class="line">    <span class="keyword">for</span> handler <span class="keyword">in</span> logging.root.handlers:</div><div class="line">        handler.addFilter(logging.Filter(<span class="string">'pbs_sub'</span>))</div><div class="line"></div><div class="line">    base_args = [<span class="string">'-m'</span>, <span class="string">'abe'</span>, <span class="string">'-M'</span>, email]</div><div class="line">    <span class="keyword">if</span> waitfor:</div><div class="line">        <span class="keyword">if</span> <span class="string">'.'</span> <span class="keyword">not</span> <span class="keyword">in</span> waitfor:</div><div class="line">            waitfor = waitfor + <span class="string">'.'</span> + PBS_SERVER</div><div class="line">        var_w = f<span class="string">'depend=afterok:&#123;waitfor&#125;'</span></div><div class="line">        base_args.extend([<span class="string">'-W'</span>, var_w])</div><div class="line"></div><div class="line">    <span class="comment"># powerflow 处理参数的处理过程</span></div><div class="line">    <span class="keyword">if</span> soft == <span class="string">'powerflow'</span>:</div><div class="line">				...</div><div class="line">    <span class="comment"># 其他软件处理过程</span></div><div class="line">    <span class="keyword">elif</span> soft == <span class="string">'other'</span>:</div><div class="line">      	...</div></pre></td></tr></table></figure>
+<p>整个脚本的大致结构为：</p>
+<ol>
+<li>库和全部变量</li>
+<li>一些公共的辅助函数，以及某些软件所使用的函数</li>
+<li>公共的命令行解析器</li>
+<li>所有软件的命令行解析器作为公共命令行解析器的子解析器</li>
+<li>公共的命令行处理过程</li>
+<li>用if-else放置不同软件的处理函数</li>
+</ol>
+<p>这个版本执行起来是没有问题的。但是依然会有几个问题：</p>
+<ul>
+<li>如果需要支持的软件很多，那么整个代码会变得非常长</li>
+<li>这个脚本需要经常改动。某个软件改动如果搞错可能会影响到不相干的软件执行</li>
+</ul>
+<p>为了解决这个问题，有两个实现方案：</p>
+<ul>
+<li>实现一个公共库，把公共解析器以及公共函数放在里面，每个软件用一个单独的入口脚本，通过引用公共库来实现代码复用</li>
+<li>实现一个公共库，把公共解析器以及公共函数放在里面。再将各个软件当作插件装载进来。这个方案需要解决的问题打乱插件的代码顺序，先执行所有parser的注册，最后根据用户输入参数的解析，将请求路由到恰当的插件里</li>
+</ul>
+<p>今天要讲的，就是第二种方案的一种实现</p>
+<h2 id="initsubclass-魔术方法介绍"><a href="#initsubclass-魔术方法介绍" class="headerlink" title="__initsubclass\_魔术方法介绍"></a>__init<em>subclass\</em>_魔术方法介绍</h2><p>在这个方案中，使用了__init<em>subclass\</em>_这个实现子类的注册和回调。因此我们首先需要了解一下__init<em>subclass\</em>_的作用和使用方法。</p>
+<p>__init<em>subclass\</em>_是python3.6引入的一个新的魔术方法。使用这个魔术方法，可以在子类定义的过程中作为钩子被调用，作用机制和元类相似。最大的区别就是这个魔术方法只在子类构建的时候被调用，父类是不会调用的。实际用起来更为简洁，编程体验也更好。元类说到底，还是有些麻烦的。而且更为重要的是，这个魔术方法可以和元类一起使用，不会产生冲突。经常使用元类编程的同学遇到的问题可能就是无法同时使用两种元类，有了这个魔术方法，代码设计上又增加了很大的灵活性。</p>
+<p>现在我们举个具体的例子来说明__init<em>subclass\</em>_是如何使用的。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">MetaData</span><span class="params">(type)</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(cls, clsname, bases, clsdict)</span>:</span></div><div class="line">        super().__init__(clsname, bases, clsdict)   <span class="comment"># 可以操作cls</span></div><div class="line">        print(<span class="string">'meta class'</span>)</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span><span class="params">(metaclass=MetaData)</span>:</span></div><div class="line">    data = <span class="string">'A'</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__new__</span><span class="params">(cls, *args, **kwargs)</span>:</span></div><div class="line">        print(<span class="string">'running new'</span>)</div><div class="line">        <span class="keyword">return</span> super().__new__(cls, *args, **kwargs) <span class="comment">#返回实例对象</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init_subclass__</span><span class="params">(cls, *args, **kwargs)</span>:</span></div><div class="line">        print(<span class="string">'running init_subclass'</span>)               <span class="comment">#可以操作cls</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, *args, **kwargs)</span>:</span></div><div class="line">        print(<span class="string">'running init'</span>)</div></pre></td></tr></table></figure>
+<p>我们先定义一个元类，以及一个使用该元类的类A,输出结果为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">meta class</div></pre></td></tr></table></figure>
+<p>从输出的结果可以看到，在定义类A的时候，MetaData被触发</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span><span class="params">(A)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
+<p>我们用A作为父类创建一个子类B，输出结果为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
+<p>从输出的结果来看，调用的顺序是先调用__init<em>subclass\</em>_,再调用元类。</p>
+<p>我们再创建一个实例看看：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">b = B()</div></pre></td></tr></table></figure>
+<p>输出结果为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running new</div><div class="line">running init</div></pre></td></tr></table></figure>
+<p>这个表现符合预期，没什么多说的。我们再用B为父类创建一个孙子类来看看__init<em>subclass\</em>_是否会执行</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">C</span><span class="params">(B)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
+<p>输出结果为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
+<p>可以看到，执行结果和B一样,说明__init<em>subclass\</em>_是可以传递的。我们再来试试方法重写</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">D</span><span class="params">(A)</span>:</span></div><div class="line">  <span class="function"><span class="keyword">def</span> <span class="title">__init_subclass__</span><span class="params">(cls, *args, **kwargs)</span>:</span></div><div class="line">    print(<span class="string">'rewrite'</span>)</div><div class="line">    super().__init_subclass__(cls, *args, **kwargs)</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">F</span><span class="params">(D)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
+<p>执行结果为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rewrite</div><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
+<p>可以看到，__init<em>subclass\</em>_可以像常规的的方法一样实现重写。我们再来试试多重继承：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">E</span>:</span></div><div class="line">  <span class="function"><span class="keyword">def</span> <span class="title">__init_subclass__</span><span class="params">(cls, *args, **kwargs)</span>:</span></div><div class="line">    print(<span class="string">'other init subclass'</span>)</div><div class="line">    super().__init_subclass__(cls, *args, **kwargs)</div></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">G</span><span class="params">(A, E)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
+<p>执行结果为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
+<p>E中的__init<em>subclass\</em>_并没有执行，但是并没有有冲突错误。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">H</span><span class="params">(E, A)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
+<p>执行结果为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">other init subclass</div><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
+<p>因为使用了supper()，A中的__init<em>subclass\</em>_得到了执行。看起来，多重继承的表现和普通的方法没什么两样。</p>
+<p>经过一系列实验，最后得到的结论是在同时使用metaclass、__init<em>subclass\</em>_, __new__与__init__的时候。在类的构建期依次调用__init<em>subclass\</em>_,与metaclass，而在实例构建的时候，依次调用__new__与__init__。</p>
+<p>而__init<em>subclass\</em>_的特性，和普通的方法区别不大。如果想有更多的了解，可以进一步参考<a href="https://www.python.org/dev/peps/pep-0487/" target="_blank" rel="external">PEP 487</a></p>
+<h2 id="利用-initsubclass-实现注册和回调机制"><a href="#利用-initsubclass-实现注册和回调机制" class="headerlink" title="利用__initsubclass\_实现注册和回调机制"></a>利用__init<em>subclass\</em>_实现注册和回调机制</h2><p>说完了__init<em>subclass\</em>_的用法以后，我们再具体看一下在这个实际案例中，如何利用这个魔术方法的特性，实现代码的解藕。</p>
+<p>先上代码：</p>
+<p><strong>pbs_sub.py</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#!/usr/bin/env python3.6</span></div><div class="line"><span class="keyword">from</span> software <span class="keyword">import</span> MainParser</div><div class="line"></div><div class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</div><div class="line">    parser = MainParser()</div><div class="line">    parser.run()</div></pre></td></tr></table></figure>
+<p><strong>software/__init__.py</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">from</span> .mainparser <span class="keyword">import</span> MainParser</div><div class="line"><span class="keyword">from</span> .powerflow <span class="keyword">import</span> PowerFlow</div></pre></td></tr></table></figure>
+<p><strong>software/mainparser.py</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div><div class="line">135</div><div class="line">136</div><div class="line">137</div><div class="line">138</div><div class="line">139</div><div class="line">140</div><div class="line">141</div><div class="line">142</div><div class="line">143</div><div class="line">144</div><div class="line">145</div><div class="line">146</div><div class="line">147</div><div class="line">148</div><div class="line">149</div><div class="line">150</div><div class="line">151</div><div class="line">152</div><div class="line">153</div><div class="line">154</div><div class="line">155</div><div class="line">156</div><div class="line">157</div><div class="line">158</div><div class="line">159</div><div class="line">160</div><div class="line">161</div><div class="line">162</div><div class="line">163</div><div class="line">164</div><div class="line">165</div><div class="line">166</div><div class="line">167</div><div class="line">168</div><div class="line">169</div><div class="line">170</div><div class="line">171</div><div class="line">172</div><div class="line">173</div><div class="line">174</div><div class="line">175</div><div class="line">176</div><div class="line">177</div><div class="line">178</div><div class="line">179</div><div class="line">180</div><div class="line">181</div><div class="line">182</div><div class="line">183</div><div class="line">184</div><div class="line">185</div><div class="line">186</div><div class="line">187</div><div class="line">188</div><div class="line">189</div><div class="line">190</div><div class="line">191</div><div class="line">192</div><div class="line">193</div><div class="line">194</div><div class="line">195</div><div class="line">196</div><div class="line">197</div><div class="line">198</div><div class="line">199</div><div class="line">200</div><div class="line">201</div><div class="line">202</div><div class="line">203</div><div class="line">204</div><div class="line">205</div><div class="line">206</div><div class="line">207</div><div class="line">208</div><div class="line">209</div><div class="line">210</div><div class="line">211</div><div class="line">212</div><div class="line">213</div><div class="line">214</div><div class="line">215</div><div class="line">216</div><div class="line">217</div><div class="line">218</div><div class="line">219</div><div class="line">220</div><div class="line">221</div><div class="line">222</div><div class="line">223</div><div class="line">224</div><div class="line">225</div><div class="line">226</div><div class="line">227</div><div class="line">228</div><div class="line">229</div><div class="line">230</div><div class="line">231</div><div class="line">232</div><div class="line">233</div><div class="line">234</div><div class="line">235</div><div class="line">236</div><div class="line">237</div><div class="line">238</div><div class="line">239</div><div class="line">240</div><div class="line">241</div><div class="line">242</div><div class="line">243</div><div class="line">244</div><div class="line">245</div><div class="line">246</div><div class="line">247</div><div class="line">248</div><div class="line">249</div><div class="line">250</div><div class="line">251</div><div class="line">252</div><div class="line">253</div><div class="line">254</div><div class="line">255</div><div class="line">256</div></pre></td><td class="code"><pre><div class="line"><span class="string">"""</span></div><div class="line">main parser</div><div class="line">"""</div><div class="line"><span class="comment"># author: thuhak.zhou@nio.com</span></div><div class="line"><span class="keyword">from</span> argparse <span class="keyword">import</span> ArgumentParser</div><div class="line"><span class="keyword">from</span> weakref <span class="keyword">import</span> WeakValueDictionary</div><div class="line"><span class="keyword">import</span> logging</div><div class="line"><span class="keyword">from</span> logging.handlers <span class="keyword">import</span> RotatingFileHandler</div><div class="line"><span class="keyword">import</span> json</div><div class="line"><span class="keyword">import</span> os</div><div class="line"><span class="keyword">from</span> os.path <span class="keyword">import</span> dirname, join, abspath, isfile, isdir</div><div class="line"><span class="keyword">from</span> string <span class="keyword">import</span> ascii_letters, digits</div><div class="line"><span class="keyword">import</span> pwd</div><div class="line"><span class="keyword">import</span> time</div><div class="line"></div><div class="line"><span class="keyword">import</span> sh</div><div class="line"></div><div class="line">__version__ = <span class="string">'2.1.0'</span></div><div class="line">__author__ = <span class="string">'thuhak.zhou@nio.com'</span></div><div class="line"></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">classproperty</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, func)</span>:</span></div><div class="line">        self.func = func</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__get__</span><span class="params">(self, instance, cls)</span>:</span></div><div class="line">        <span class="keyword">if</span> cls <span class="keyword">is</span> <span class="keyword">None</span>:</div><div class="line">            <span class="keyword">return</span> self</div><div class="line">        <span class="keyword">else</span>:</div><div class="line">            value = self.func(cls)</div><div class="line">            setattr(cls, self.func.__name__, value)</div><div class="line">            <span class="keyword">return</span> value</div><div class="line"></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">MainParser</span>:</span></div><div class="line">    <span class="string">"""</span></div><div class="line">    provide common args for pbs.</div><div class="line">    argument parser of subclasses will regist in _all_software variable</div><div class="line">    the request will be route to the right software subclass</div><div class="line">    """</div><div class="line">    _all_software = WeakValueDictionary()</div><div class="line">    logger = logging.getLogger(<span class="string">'pbs_sub'</span>)</div><div class="line">    PBS_SERVER = <span class="string">'p-shhq-hpc-pbs-m01'</span></div><div class="line">    QSUB = sh.Command(<span class="string">'/opt/pbs/bin/qsub'</span>)</div><div class="line">    script_base = join(dirname(abspath(__file__)), <span class="string">'run_scripts'</span>)</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></div><div class="line">        self.base_args = []</div><div class="line">        self.parser = ArgumentParser(description=f<span class="string">"This script is used for pbs job submission, version: &#123;__version__&#125;"</span>,</div><div class="line">                                     epilog=f<span class="string">'if you have any question or suggestion, please contact with &#123;__author__&#125;'</span>)</div><div class="line">        self.parser.add_argument(<span class="string">'-n'</span>, <span class="string">'--name'</span>, help=<span class="string">'job name'</span>)</div><div class="line">        self.parser.add_argument(<span class="string">'-l'</span>, <span class="string">'--log_level'</span>, choices=[<span class="string">'error'</span>, <span class="string">'info'</span>, <span class="string">'debug'</span>], default=<span class="string">'info'</span>,</div><div class="line">                                 help=<span class="string">'logging level'</span>)</div><div class="line">        self.parser.add_argument(<span class="string">'-W'</span>, <span class="string">'--wait'</span>, metavar=<span class="string">'JOB_ID'</span>, help=<span class="string">'depend on which job'</span>)</div><div class="line">        self.parser.add_argument(<span class="string">'--free_cores'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'show free cpu cores by queue'</span>)</div><div class="line">        software = self.parser.add_subparsers(dest=<span class="string">'software'</span>, help=<span class="string">'software list'</span>)</div><div class="line">        <span class="keyword">for</span> soft <span class="keyword">in</span> self._all_software:</div><div class="line">            cls = self._all_software[soft]</div><div class="line">            parser = software.add_parser(cls.__software__, help=f<span class="string">'(script version &#123;cls.__version__&#125;)'</span>)</div><div class="line">            cls.add_parser(parser)</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">add_parser</span><span class="params">(cls, parser: ArgumentParser)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        abc interface, implement this method in subclass</div><div class="line">        """</div><div class="line">        <span class="keyword">raise</span> NotImplementedError</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">handle</span><span class="params">(cls, args, base_args)</span> -&gt; list:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        abc interface, implement this method in subclass</div><div class="line"></div><div class="line">        args: argument args</div><div class="line">        base_args: all argument provided by main parser</div><div class="line">        :return all job ids in list</div><div class="line">        """</div><div class="line">        <span class="keyword">raise</span> NotImplementedError</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init_subclass__</span><span class="params">(cls, **kwargs)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        regist subclass</div><div class="line">        """</div><div class="line">        super().__init_subclass__(**kwargs)</div><div class="line">        <span class="keyword">if</span> <span class="keyword">not</span> getattr(cls, <span class="string">'__software__'</span>) <span class="keyword">or</span> <span class="keyword">not</span> getattr(cls, <span class="string">'__version__'</span>):</div><div class="line">            <span class="keyword">raise</span> NotImplementedError(<span class="string">'you need to set __software__ and __version__ attribute in your subclass'</span>)</div><div class="line">        cls._all_software[cls.__software__] = cls</div><div class="line"></div><div class="line"><span class="meta">    @classproperty</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">default_run</span><span class="params">(cls)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        default run script</div><div class="line">        """</div><div class="line">        run_script = join(cls.script_base, cls.__software__ + <span class="string">'.sh'</span>)</div><div class="line">        <span class="keyword">if</span> <span class="keyword">not</span> isfile(run_script):</div><div class="line">            cls.logger.error(f<span class="string">'you need to put the script &#123;run_script&#125; first'</span>)</div><div class="line">            exit(<span class="number">1</span>)</div><div class="line">        <span class="keyword">return</span> run_script</div><div class="line"></div><div class="line"><span class="meta">    @classproperty</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">pbs_nodes_data</span><span class="params">(cls)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        get node data from pbs</div><div class="line">        """</div><div class="line">        cls.logger.debug(<span class="string">'getting pbs node info'</span>)</div><div class="line">        <span class="keyword">try</span>:</div><div class="line">            PBSNODES = sh.Command(<span class="string">'/opt/pbs/bin/pbsnodes'</span>)</div><div class="line">            raw_nodedata = json.loads(PBSNODES(<span class="string">'-aS'</span>, <span class="string">'-F'</span>, <span class="string">'json'</span>).stdout)[<span class="string">'nodes'</span>]</div><div class="line">            raw_nodedata2 = json.loads(PBSNODES(<span class="string">'-Saj'</span>, <span class="string">'-F'</span>, <span class="string">'json'</span>).stdout)[<span class="string">'nodes'</span>]</div><div class="line">            <span class="keyword">for</span> k <span class="keyword">in</span> raw_nodedata.keys():</div><div class="line">                raw_nodedata[k].update(raw_nodedata2[k])</div><div class="line">            <span class="keyword">return</span> raw_nodedata</div><div class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</div><div class="line">            cls.logger.error(f<span class="string">'PBS error, can not get pbs node info, reason: &#123;str(e)&#125;'</span>)</div><div class="line">            exit(<span class="number">-1</span>)</div><div class="line"></div><div class="line"><span class="meta">    @classproperty</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">pbs_job_data</span><span class="params">(cls)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        get pbs job data</div><div class="line">        """</div><div class="line">        cls.logger.debug(<span class="string">'getting pbs job info'</span>)</div><div class="line">        <span class="keyword">try</span>:</div><div class="line">            QSTAT = sh.Command(<span class="string">'/opt/pbs/bin/qstat'</span>)</div><div class="line">            raw_data = sh.grep(QSTAT(<span class="string">'-f'</span>, <span class="string">'-F'</span>, <span class="string">'json'</span>), <span class="string">'-v'</span>, <span class="string">'Submit_arguments'</span>).stdout</div><div class="line">            job_data = json.loads(raw_data)[<span class="string">'Jobs'</span>]</div><div class="line">            <span class="keyword">return</span> job_data</div><div class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</div><div class="line">            cls.logger.error(f<span class="string">'PBS error, can not get pbs job info, reason: &#123;str(e)&#125;'</span>)</div><div class="line">            exit(<span class="number">-1</span>)</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">free_cores</span><span class="params">(cls, queue: str)</span> -&gt; int:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        get free cores in queue</div><div class="line">        """</div><div class="line">        count = <span class="number">0</span></div><div class="line">        cls.logger.debug(f<span class="string">'getting free cores in &#123;queue&#125;'</span>)</div><div class="line">        pbsdata = cls.pbs_nodes_data</div><div class="line">        <span class="keyword">for</span> node <span class="keyword">in</span> pbsdata.values():</div><div class="line">            <span class="keyword">if</span> node.get(<span class="string">'queue'</span>) == queue:</div><div class="line">                core_free = int(node.get(<span class="string">'ncpus f/t'</span>).split(<span class="string">'/'</span>)[<span class="number">0</span>])</div><div class="line">                count += core_free</div><div class="line">        cls.logger.debug(f<span class="string">'number of free cores in &#123;queue&#125; is &#123;count&#125;'</span>)</div><div class="line">        <span class="keyword">return</span> count</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">all_free_cores</span><span class="params">(cls)</span> -&gt; dict:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        get all free cores in all queues</div><div class="line">        """</div><div class="line">        <span class="keyword">from</span> collections <span class="keyword">import</span> defaultdict</div><div class="line">        cls.logger.debug(<span class="string">'getting free cores'</span>)</div><div class="line">        pbsdata = cls.pbs_nodes_data</div><div class="line">        ret = defaultdict(int)</div><div class="line">        <span class="keyword">for</span> node <span class="keyword">in</span> pbsdata.values():</div><div class="line">            queue = node.get(<span class="string">'queue'</span>)</div><div class="line">            <span class="keyword">if</span> queue:</div><div class="line">                ret[queue] += int(node.get(<span class="string">'ncpus f/t'</span>).split(<span class="string">'/'</span>)[<span class="number">0</span>])</div><div class="line">        <span class="keyword">return</span> ret</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">check_jobid</span><span class="params">(cls, jid: str)</span> -&gt; bool:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        check job id in pbs or not</div><div class="line">        """</div><div class="line">        cls.logger.debug(f<span class="string">'checking job &#123;jid&#125;'</span>)</div><div class="line">        <span class="keyword">return</span> jid <span class="keyword">in</span> cls.pbs_job_data</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get_jid_info</span><span class="params">(cls, jid: str)</span> -&gt; dict:</span></div><div class="line">        cls.logger.debug(f<span class="string">'getting job information for &#123;jid&#125;'</span>)</div><div class="line">        <span class="keyword">try</span>:</div><div class="line">            QSTAT = sh.Command(<span class="string">'/opt/pbs/bin/qstat'</span>)</div><div class="line">            raw_info = sh.grep(QSTAT(<span class="string">'-f'</span>, <span class="string">'-F'</span>, <span class="string">'json'</span>, jid), <span class="string">'-v'</span>, <span class="string">'Submit_arguments'</span>).stdout</div><div class="line">            job_info = json.loads(raw_info)[<span class="string">'Jobs'</span>][jid]</div><div class="line">            <span class="keyword">return</span> job_info</div><div class="line">        <span class="keyword">except</span> json.decoder.JSONDecodeError:</div><div class="line">            cls.logger.error(f<span class="string">'job &#123;jid&#125; is not json format'</span>)</div><div class="line">            cls.logger.debug(raw_info)</div><div class="line">            exit(<span class="number">1</span>)</div><div class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</div><div class="line">            cls.logger.error(f<span class="string">'unable to get information from pbs, reason: &#123;str(e)&#125;'</span>)</div><div class="line">            exit(<span class="number">1</span>)</div><div class="line"></div><div class="line"><span class="meta">    @staticmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">replace_id</span><span class="params">(args: list, jobid: str)</span> -&gt; <span class="keyword">None</span>:</span></div><div class="line">        <span class="string">"""this function will change the state of args"""</span></div><div class="line">        <span class="keyword">try</span>:</div><div class="line">            w_i = args.index(<span class="string">'-W'</span>)</div><div class="line">            args[w_i + <span class="number">1</span>] = f<span class="string">'depend=afterok:&#123;jobid&#125;'</span></div><div class="line">        <span class="keyword">except</span> ValueError:</div><div class="line">            args.extend([<span class="string">'-W'</span>, f<span class="string">'depend=afterok:&#123;jobid&#125;'</span>])</div><div class="line"></div><div class="line"><span class="meta">    @staticmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">fix_jobname</span><span class="params">(name: str)</span> -&gt; str:</span></div><div class="line">        valid_str = ascii_letters + digits + <span class="string">'_'</span></div><div class="line">        ret = name</div><div class="line">        <span class="keyword">for</span> c <span class="keyword">in</span> name:</div><div class="line">            <span class="keyword">if</span> c <span class="keyword">not</span> <span class="keyword">in</span> valid_str:</div><div class="line">                ret = ret.replace(c, <span class="string">'_'</span>)</div><div class="line">        <span class="keyword">return</span> ret</div><div class="line"></div><div class="line"><span class="meta">    @staticmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get_ncpu</span><span class="params">(queue: str)</span> -&gt; int:</span></div><div class="line">        <span class="keyword">return</span> <span class="number">16</span> <span class="keyword">if</span> queue == <span class="string">'cfdbs'</span> <span class="keyword">else</span> <span class="number">32</span></div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">run</span><span class="params">(self)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        program entry</div><div class="line">        """</div><div class="line">        uid = os.getuid()</div><div class="line">        user = pwd.getpwuid(uid)[<span class="number">0</span>]</div><div class="line">        args = self.parser.parse_args()</div><div class="line">        log_level = getattr(logging, args.log_level.upper())</div><div class="line">        handlers = [logging.StreamHandler()]</div><div class="line">        logdir = <span class="string">'/var/log/pbs_sub'</span></div><div class="line">        <span class="keyword">if</span> isdir(logdir):</div><div class="line">            loghandler = RotatingFileHandler(join(logdir, user + <span class="string">'.log'</span>), maxBytes=<span class="number">10</span>*<span class="number">1024</span>*<span class="number">1024</span>, backupCount=<span class="number">3</span>, encoding=<span class="string">'utf-8'</span>)</div><div class="line">            handlers.append(loghandler)</div><div class="line">        logging.basicConfig(level=log_level, format=<span class="string">'%(asctime)s [%(levelname)s]: %(message)s'</span>,</div><div class="line">                            datefmt=<span class="string">"%Y-%m-%d %H:%M:%S"</span>, handlers=handlers)</div><div class="line">        <span class="keyword">for</span> handler <span class="keyword">in</span> logging.root.handlers:</div><div class="line">            handler.addFilter(logging.Filter(<span class="string">'pbs_sub'</span>))</div><div class="line">        <span class="keyword">if</span> args.free_cores:</div><div class="line">            free_cores = self.all_free_cores()</div><div class="line">            ali = max([len(x) <span class="keyword">for</span> x <span class="keyword">in</span> free_cores.keys()]) + <span class="number">3</span></div><div class="line">            <span class="keyword">for</span> q, c <span class="keyword">in</span> free_cores.items():</div><div class="line">                space = <span class="string">' '</span> * (ali - len(q))</div><div class="line">                print(f<span class="string">'&#123;q&#125;:&#123;space&#125;&#123;c&#125;'</span>)</div><div class="line">            <span class="keyword">return</span></div><div class="line">        software = args.software</div><div class="line">        email = user + <span class="string">'@nio.com'</span></div><div class="line">        waitfor = args.wait</div><div class="line">        base_args = [<span class="string">'-m'</span>, <span class="string">'abe'</span>, <span class="string">'-M'</span>, email]</div><div class="line">        <span class="keyword">if</span> waitfor:</div><div class="line">            <span class="keyword">if</span> <span class="string">'.'</span> <span class="keyword">not</span> <span class="keyword">in</span> waitfor:</div><div class="line">                waitfor = waitfor + <span class="string">'.'</span> + self.PBS_SERVER</div><div class="line">            <span class="keyword">if</span> <span class="keyword">not</span> self.check_jobid(waitfor):</div><div class="line">                self.logger.debug(f<span class="string">'invalid job id &#123;waitfor&#125;'</span>)</div><div class="line">                exit(<span class="number">1</span>)</div><div class="line">            var_w = f<span class="string">'depend=afterok:&#123;waitfor&#125;'</span></div><div class="line">            base_args.extend([<span class="string">'-W'</span>, var_w])</div><div class="line">        <span class="keyword">if</span> software <span class="keyword">in</span> self._all_software:</div><div class="line">            jids = self._all_software[software].handle(args, base_args)</div><div class="line">            time.sleep(<span class="number">1</span>)</div><div class="line">            <span class="keyword">for</span> jid <span class="keyword">in</span> jids:</div><div class="line">                job_info = self.get_jid_info(jid)</div><div class="line">                job_stat = job_info.get(<span class="string">'job_state'</span>)</div><div class="line">                info = f<span class="string">'job &#123;jid&#125; is in state &#123;job_stat&#125;'</span></div><div class="line">                comment = job_info.get(<span class="string">'comment'</span>)</div><div class="line">                <span class="keyword">if</span> comment:</div><div class="line">                    info += f<span class="string">',comment: &#123;comment&#125;'</span></div><div class="line">                self.logger.info(info)</div><div class="line">        <span class="keyword">else</span>:</div><div class="line">            self.parser.print_help()</div></pre></td></tr></table></figure>
+<p><strong>software/powerflow.py</strong></p>
+<p>因为涉及到具体的业务逻辑，因此整个实现就被我省略了，这里只是为了演示整个结构</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># author: thuhak.zhou@nio.com</span></div><div class="line"><span class="keyword">import</span> os</div><div class="line"><span class="keyword">import</span> random</div><div class="line"><span class="keyword">from</span> copy <span class="keyword">import</span> deepcopy</div><div class="line"><span class="keyword">from</span> glob <span class="keyword">import</span> glob</div><div class="line"><span class="keyword">import</span> re</div><div class="line"></div><div class="line"><span class="keyword">import</span> sh</div><div class="line"><span class="keyword">from</span> .mainparser <span class="keyword">import</span> MainParser</div><div class="line"></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">PowerFlow</span><span class="params">(MainParser)</span>:</span></div><div class="line">    __software__ = <span class="string">'powerflow'</span></div><div class="line">    __version__ = <span class="string">'2.1.0'</span></div><div class="line">    base_dir = <span class="string">'/home/hpcsw/EXA/powerflow'</span></div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">add_parser</span><span class="params">(cls, parser)</span>:</span></div><div class="line">        parser.add_argument(<span class="string">'-q'</span>, <span class="string">'--queue'</span>, choices=[<span class="string">"cfd"</span>, <span class="string">"cfd2"</span>, <span class="string">"cfdbs"</span>], default=<span class="string">"cfdbs"</span>, help=<span class="string">'queue of job'</span>)</div><div class="line">        parser.add_argument(<span class="string">'-c'</span>, <span class="string">'--core'</span>, type=int, choices=[<span class="number">32</span>, <span class="number">64</span>, <span class="number">128</span>, <span class="number">256</span>, <span class="number">512</span>, <span class="number">768</span>, <span class="number">1024</span>],</div><div class="line">                               help=<span class="string">'how many cpu cores you wanna use. default value is half of the free cores in your queue'</span>)</div><div class="line">        parser.add_argument(<span class="string">'jobfile'</span>, help=<span class="string">'job file'</span>)</div><div class="line">        parser.add_argument(<span class="string">'-v'</span>, <span class="string">'--version'</span>,</div><div class="line">                               choices=[<span class="string">"4.4d"</span>, <span class="string">"5.3b"</span>, <span class="string">"5.3c"</span>, <span class="string">"5.4b"</span>, <span class="string">"5.5a"</span>, <span class="string">"5.5b"</span>, <span class="string">"5.5c"</span>, <span class="string">"5.5c2"</span>, <span class="string">"6-2019"</span>],</div><div class="line">                               default=<span class="string">"5.5b"</span>, help=<span class="string">'version of powerflow'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--nts'</span>, metavar=<span class="string">'TIMESTEPS'</span>, type=int, help=<span class="string">'num timesteps'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--seed_bondaries'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'set seed_bondaries'</span>)</div><div class="line">        pow_group = parser.add_mutually_exclusive_group()</div><div class="line">        pow_group.add_argument(<span class="string">'-r'</span>, <span class="string">'--resume'</span>, metavar=<span class="string">'RESUME_FILE'</span>, help=<span class="string">'resume file'</span>)</div><div class="line">        pow_group.add_argument(<span class="string">'-s'</span>, <span class="string">'--seed'</span>, metavar=<span class="string">'SEED_FILE'</span>, help=<span class="string">'seed file'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--mme'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'mme checkpoint at end'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--full'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'full checkpoint at end'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--pt'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'enable powerTHERM'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--dis'</span>, choices=[<span class="string">'only'</span>, <span class="string">'full'</span>],</div><div class="line">                               help=<span class="string">'run discretize, when you set only, just run dis job, if your set full, powerflow job will be run after dis job is finish'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--vr'</span>, metavar=<span class="string">'LEVEL'</span>, type=int, help=<span class="string">'suppress vr level for discretize job'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--postacoustics'</span>, choices=[<span class="string">'only'</span>, <span class="string">'full'</span>],</div><div class="line">                               help=<span class="string">'run powerflow post process, contact with fuchao.wang@nio.com to get more information'</span>)</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">default_cores</span><span class="params">(cls, queue)</span>:</span></div><div class="line">        total_cores = cls.free_cores(queue)</div><div class="line">        <span class="keyword">for</span> c <span class="keyword">in</span> (<span class="number">2048</span>, <span class="number">1536</span>, <span class="number">1024</span>, <span class="number">960</span>, <span class="number">512</span>):</div><div class="line">            <span class="keyword">if</span> total_cores &gt;= c:</div><div class="line">                <span class="keyword">return</span> c // <span class="number">2</span></div><div class="line">        <span class="keyword">return</span> <span class="number">128</span></div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">handle</span><span class="params">(cls, args, base_args)</span>:</span></div><div class="line">        jids = []</div><div class="line">        ...</div><div class="line">        <span class="keyword">return</span> jids</div></pre></td></tr></table></figure>
+<p>从整个代码结构上， 我们可以看到。</p>
+<p>公共的逻辑被放置到了MainParser中，而powerflow的业务逻辑，则被独立开来，放置到了一个单独的文件内。并通过类的继承，复用了公用的类的方法，变量，以及数据缓存。</p>
+<p>整个软件的逻辑如下:</p>
+<ol>
+<li>在MainParser类中，通过__init<em>subclass\</em>_,在类还在创建过程中，就将整个类对象放置到自己的全局字典中。而类创建代码，则是在import的时候执行</li>
+<li>在MainPasrer进行实例初始化的时候，依次调用所有子类的add_parser方法，实现所有插件parser的注册</li>
+<li>最后在实例化的mainparser对象中，通过run方法，解析用户的输入，并路由给对应的插件handle处理方法。拿到对应handle的处理后，在进行下一道工序的处理</li>
+</ol>
+<p>所有的MainParser的类中，所有的子类均没有进行实例化，因为并没有必要。唯一实例化的是MainParser本身。</p>
+<p>而当你需要添加一个新的计算软件。那么你只需要:</p>
+<p>在software中放置一个单独的文件，写一个MainParser的子类.</p>
+<p>在这个子类中，需要实现：</p>
+<ul>
+<li>定义__software__,以及__version__类变量。注册插件信息</li>
+<li>实现add_parser类方法，提供子命令的入口给mainparser回调</li>
+<li>实现handle类方法，提供给mainparser回调</li>
+<li>最后通过修改sotware/_<em>init\</em>_.py将新的代码引入即可</li>
+</ul>
+<p>如果觉得每次都要import一下新的代码很烦，可以定制import的过程做自动加载，但是目前来看，并没有多少必要来做这个事，还是从简的好。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过使用python元编程，我们往往可以使用极少的代码就可以实现比较复杂的设计模式。这也python是让人非常上瘾的一点。</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/12/saltstack7/" rel="next" title="saltstack7">
+                <i class="fa fa-chevron-left"></i> saltstack7
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.jpg"
+               alt="thuhak" />
+          <p class="site-author-name" itemprop="name">thuhak</p>
+          <p class="site-description motion-element" itemprop="description">hit me as hard as you can</p>
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">15</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">6</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">12</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#问题背景"><span class="nav-number">1.</span> <span class="nav-text">问题背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#initsubclass-魔术方法介绍"><span class="nav-number">2.</span> <span class="nav-text">__initsubclass\_魔术方法介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#利用-initsubclass-实现注册和回调机制"><span class="nav-number">3.</span> <span class="nav-text">利用__initsubclass\_实现注册和回调机制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">thuhak</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+  
+  
+
+  
+  
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for (i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+      });
+    </script>
+    <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  
+
+
+  
+
+  
+
+  
+
+
+</body>
+</html>

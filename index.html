@@ -251,6 +251,340 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/27/new-parser/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="thuhak">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.jpg">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="fightclub">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="fightclub" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                
+                <a class="post-title-link" href="/2019/11/27/new-parser/" itemprop="url">
+                  一个模块化的命令行解析器实现方案
+                </a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-11-27T11:31:17+08:00">
+                2019-11-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>大约在上个月，有这样一个需求，需要为HPC的用户提供一个统一的任务提交脚本。用户可以使用这个脚本提交任务计算。我们实际使用的任务调度系统是PBSpro。因此这个主要的功能是:</p>
+<ul>
+<li>为各种不同的计算软件提供一个一致的入口，对复杂的pbs提交参数进行检测</li>
+<li>在任务提交前对用户参数进行校验和检查</li>
+<li>在任务提交前根据当前队列的状态，优化提交参数</li>
+</ul>
+<p>这是一个简单的需求。我个人比较喜欢argparse这个库。能够很容易实现各种模式的命令行参数。当然也有一些同学喜欢click, Fire或者是optparse,今天就不多做讨论了。</p>
+<p>最初的版本大概是这样子的</p>
+<p><strong>pbs_sub.py</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> os</div><div class="line"><span class="keyword">from</span> glob <span class="keyword">import</span> glob</div><div class="line"><span class="keyword">from</span> argparse <span class="keyword">import</span> ArgumentParser</div><div class="line"><span class="keyword">from</span> copy <span class="keyword">import</span> deepcopy</div><div class="line"><span class="keyword">import</span> logging</div><div class="line"><span class="keyword">import</span> json</div><div class="line"><span class="keyword">import</span> random</div><div class="line"><span class="keyword">import</span> pwd</div><div class="line"></div><div class="line"><span class="keyword">import</span> sh</div><div class="line"></div><div class="line">__version__ = <span class="string">'1.1.0'</span></div><div class="line"></div><div class="line">PBS_SERVER = <span class="string">'p-shhq-hpc-pbs-m01'</span></div><div class="line">QSUB = sh.Command(<span class="string">'/opt/pbs/bin/qsub'</span>)</div><div class="line">PBSNODES = sh.Command(<span class="string">'/opt/pbs/bin/pbsnodes'</span>)</div><div class="line">powerflow_run = <span class="string">'/home/hpcsw/PBSsubmit/run.powerflow2'</span></div><div class="line">dis_run = <span class="string">'/home/hpcsw/PBSsubmit/run.dis2'</span></div><div class="line"></div><div class="line">logger = logging.getLogger(<span class="string">'pbs_sub'</span>)</div><div class="line"></div><div class="line"><span class="comment"># 一些公共函数</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">free_cores</span><span class="params">(queue)</span>:</span></div><div class="line">    <span class="string">"""</span></div><div class="line">    free cores in queue</div><div class="line">    """</div><div class="line">    count = <span class="number">0</span></div><div class="line">    logger.debug(f<span class="string">'getting free cores in &#123;queue&#125;'</span>)</div><div class="line">    <span class="keyword">try</span>:</div><div class="line">        raw_nodedata = json.loads(PBSNODES(<span class="string">'-aS'</span>, <span class="string">'-F'</span>, <span class="string">'json'</span>).stdout)[<span class="string">'nodes'</span>]</div><div class="line">        raw_nodedata2 = json.loads(PBSNODES(<span class="string">'-Saj'</span>, <span class="string">'-F'</span>, <span class="string">'json'</span>).stdout)[<span class="string">'nodes'</span>]</div><div class="line">    <span class="keyword">except</span>:</div><div class="line">        logger.error(<span class="string">'PBS error, can not get pbs info'</span>)</div><div class="line">        exit(<span class="number">-1</span>)</div><div class="line">    <span class="keyword">for</span> k, v <span class="keyword">in</span> raw_nodedata.items():</div><div class="line">        <span class="keyword">if</span> v.get(<span class="string">'queue'</span>) != queue:</div><div class="line">            <span class="keyword">continue</span></div><div class="line">        <span class="keyword">else</span>:</div><div class="line">            core_free = int(raw_nodedata2[k].get(<span class="string">'ncpus f/t'</span>).split(<span class="string">'/'</span>)[<span class="number">0</span>])</div><div class="line">            count += core_free</div><div class="line">    logger.debug(f<span class="string">'number of free cores in &#123;queue&#125; is &#123;count&#125;'</span>)</div><div class="line">    <span class="keyword">return</span> count</div><div class="line"></div><div class="line"><span class="comment"># 公共命令行参数</span></div><div class="line">parser = ArgumentParser(description=__doc__,</div><div class="line">                        epilog=<span class="string">'if you have any question or suggestion, please contact with thuhak.zhou@nio.com'</span>)</div><div class="line">parser.add_argument(<span class="string">'-n'</span>, <span class="string">'--name'</span>, help=<span class="string">'job name'</span>)</div><div class="line">parser.add_argument(<span class="string">'-l'</span>, <span class="string">'--log_level'</span>, choices=[<span class="string">'error'</span>, <span class="string">'info'</span>, <span class="string">'debug'</span>], default=<span class="string">'info'</span>, help=<span class="string">'logging level'</span>)</div><div class="line">parser.add_argument(<span class="string">'-W'</span>, <span class="string">'--wait'</span>, metavar=<span class="string">'JOB_ID'</span>, help=<span class="string">'depend on which job'</span>)</div><div class="line">software = parser.add_subparsers(dest=<span class="string">'software'</span>, help=<span class="string">'supported software'</span>)</div><div class="line"></div><div class="line"><span class="comment"># powerflow 软件的命令行参数</span></div><div class="line">powerflow = software.add_parser(<span class="string">'powerflow'</span>, help=<span class="string">'powerflow'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'-q'</span>, <span class="string">'--queue'</span>, choices=[<span class="string">"cfd"</span>, <span class="string">"cfd2"</span>, <span class="string">"cfdbs"</span>], required=<span class="keyword">True</span>, help=<span class="string">'queue of job'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'-o'</span>, <span class="string">'--outdir'</span>, help=<span class="string">'output directory, default is as same as jobfile'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'-c'</span>, <span class="string">'--core'</span>, type=int, choices=[<span class="number">32</span>, <span class="number">64</span>, <span class="number">128</span>, <span class="number">256</span>, <span class="number">512</span>, <span class="number">768</span>, <span class="number">1024</span>],</div><div class="line">                       help=<span class="string">'how many cpu cores you wanna use. default value is half of the free cores in your queue'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'jobfile'</span>, help=<span class="string">'job file'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'-v'</span>, <span class="string">'--version'</span>, choices=[<span class="string">"4.4d"</span>, <span class="string">"5.3b"</span>, <span class="string">"5.3c"</span>, <span class="string">"5.4b"</span>, <span class="string">"5.5a"</span>, <span class="string">"5.5c"</span>, <span class="string">"5.5c2"</span>, <span class="string">"6-2019"</span>],</div><div class="line">                       default=<span class="string">"5.5b"</span>, help=<span class="string">'version of powerflow software'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'--nts'</span>, metavar=<span class="string">'TIMESTEPS'</span>, type=int, help=<span class="string">'num timesteps'</span>)</div><div class="line">pow_group = powerflow.add_mutually_exclusive_group()</div><div class="line">powerflow.add_argument(<span class="string">'--seed_bondaries'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'set seed_bondaries'</span>)</div><div class="line">pow_group.add_argument(<span class="string">'-r'</span>, <span class="string">'--resume'</span>, metavar=<span class="string">'RESUME_FILE'</span>, help=<span class="string">'resume file'</span>)</div><div class="line">pow_group.add_argument(<span class="string">'-s'</span>, <span class="string">'--seed'</span>, metavar=<span class="string">'SEED_FILE'</span>, help=<span class="string">'seed file'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'--mme'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'mme checkpoint at end'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'--full'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'full checkpoint at end'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'--pt'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'ptherm nprocs and ptherm max unmatched ratio'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'--dis'</span>, choices=[<span class="string">'only'</span>, <span class="string">'full'</span>],</div><div class="line">                       help=<span class="string">'run discretize, when you set only, just run dis job, if your set full, powerflow job will be run after dis job is finish'</span>)</div><div class="line">powerflow.add_argument(<span class="string">'--vr'</span>, metavar=<span class="string">'LEVEL'</span>, type=int, help=<span class="string">'suppress vr level for discretize job'</span>)</div><div class="line"></div><div class="line"><span class="comment"># 其他软件参数位置</span></div><div class="line">other = software.add_parser(<span class="string">'other'</span>)</div><div class="line">...</div><div class="line"></div><div class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</div><div class="line">  	<span class="comment"># 公共的</span></div><div class="line">    uid = os.getuid()</div><div class="line">    user = pwd.getpwuid(uid)[<span class="number">0</span>]</div><div class="line">    email = user + <span class="string">'@nio.com'</span></div><div class="line">    args = parser.parse_args()</div><div class="line">    soft = args.software</div><div class="line">    waitfor = args.wait</div><div class="line">    log_level = getattr(logging, args.log_level.upper())</div><div class="line">    logging.basicConfig(level=log_level, format=<span class="string">'%(asctime)s [%(levelname)s]: %(message)s'</span>,</div><div class="line">                        datefmt=<span class="string">"%Y-%m-%d %H:%M:%S"</span>)</div><div class="line">    <span class="keyword">for</span> handler <span class="keyword">in</span> logging.root.handlers:</div><div class="line">        handler.addFilter(logging.Filter(<span class="string">'pbs_sub'</span>))</div><div class="line"></div><div class="line">    base_args = [<span class="string">'-m'</span>, <span class="string">'abe'</span>, <span class="string">'-M'</span>, email]</div><div class="line">    <span class="keyword">if</span> waitfor:</div><div class="line">        <span class="keyword">if</span> <span class="string">'.'</span> <span class="keyword">not</span> <span class="keyword">in</span> waitfor:</div><div class="line">            waitfor = waitfor + <span class="string">'.'</span> + PBS_SERVER</div><div class="line">        var_w = f<span class="string">'depend=afterok:&#123;waitfor&#125;'</span></div><div class="line">        base_args.extend([<span class="string">'-W'</span>, var_w])</div><div class="line"></div><div class="line">    <span class="comment"># powerflow 处理参数的处理过程</span></div><div class="line">    <span class="keyword">if</span> soft == <span class="string">'powerflow'</span>:</div><div class="line">				...</div><div class="line">    <span class="comment"># 其他软件处理过程</span></div><div class="line">    <span class="keyword">elif</span> soft == <span class="string">'other'</span>:</div><div class="line">      	...</div></pre></td></tr></table></figure>
+<p>整个脚本的大致结构为：</p>
+<ol>
+<li>库和全部变量</li>
+<li>一些公共的辅助函数，以及某些软件所使用的函数</li>
+<li>公共的命令行解析器</li>
+<li>所有软件的命令行解析器作为公共命令行解析器的子解析器</li>
+<li>公共的命令行处理过程</li>
+<li>用if-else放置不同软件的处理函数</li>
+</ol>
+<p>这个版本执行起来是没有问题的。但是依然会有几个问题：</p>
+<ul>
+<li>如果需要支持的软件很多，那么整个代码会变得非常长</li>
+<li>这个脚本需要经常改动。某个软件改动如果搞错可能会影响到不相干的软件执行</li>
+</ul>
+<p>为了解决这个问题，有两个实现方案：</p>
+<ul>
+<li>实现一个公共库，把公共解析器以及公共函数放在里面，每个软件用一个单独的入口脚本，通过引用公共库来实现代码复用</li>
+<li>实现一个公共库，把公共解析器以及公共函数放在里面。再将各个软件当作插件装载进来。这个方案需要解决的问题打乱插件的代码顺序，先执行所有parser的注册，最后根据用户输入参数的解析，将请求路由到恰当的插件里</li>
+</ul>
+<p>今天要讲的，就是第二种方案的一种实现</p>
+<h2 id="initsubclass-魔术方法介绍"><a href="#initsubclass-魔术方法介绍" class="headerlink" title="__initsubclass\_魔术方法介绍"></a>__init<em>subclass\</em>_魔术方法介绍</h2><p>在这个方案中，使用了__init<em>subclass\</em>_这个实现子类的注册和回调。因此我们首先需要了解一下__init<em>subclass\</em>_的作用和使用方法。</p>
+<p>__init<em>subclass\</em>_是python3.6引入的一个新的魔术方法。使用这个魔术方法，可以在子类定义的过程中作为钩子被调用，作用机制和元类相似。最大的区别就是这个魔术方法只在子类构建的时候被调用，父类是不会调用的。实际用起来更为简洁，编程体验也更好。元类说到底，还是有些麻烦的。而且更为重要的是，这个魔术方法可以和元类一起使用，不会产生冲突。经常使用元类编程的同学遇到的问题可能就是无法同时使用两种元类，有了这个魔术方法，代码设计上又增加了很大的灵活性。</p>
+<p>现在我们举个具体的例子来说明__init<em>subclass\</em>_是如何使用的。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">MetaData</span><span class="params">(type)</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(cls, clsname, bases, clsdict)</span>:</span></div><div class="line">        super().__init__(clsname, bases, clsdict)   <span class="comment"># 可以操作cls</span></div><div class="line">        print(<span class="string">'meta class'</span>)</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span><span class="params">(metaclass=MetaData)</span>:</span></div><div class="line">    data = <span class="string">'A'</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__new__</span><span class="params">(cls, *args, **kwargs)</span>:</span></div><div class="line">        print(<span class="string">'running new'</span>)</div><div class="line">        <span class="keyword">return</span> super().__new__(cls, *args, **kwargs) <span class="comment">#返回实例对象</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init_subclass__</span><span class="params">(cls, *args, **kwargs)</span>:</span></div><div class="line">        print(<span class="string">'running init_subclass'</span>)               <span class="comment">#可以操作cls</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, *args, **kwargs)</span>:</span></div><div class="line">        print(<span class="string">'running init'</span>)</div></pre></td></tr></table></figure>
+<p>我们先定义一个元类，以及一个使用该元类的类A,输出结果为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">meta class</div></pre></td></tr></table></figure>
+<p>从输出的结果可以看到，在定义类A的时候，MetaData被触发</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span><span class="params">(A)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
+<p>我们用A作为父类创建一个子类B，输出结果为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
+<p>从输出的结果来看，调用的顺序是先调用__init<em>subclass\</em>_,再调用元类。</p>
+<p>我们再创建一个实例看看：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">b = B()</div></pre></td></tr></table></figure>
+<p>输出结果为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running new</div><div class="line">running init</div></pre></td></tr></table></figure>
+<p>这个表现符合预期，没什么多说的。我们再用B为父类创建一个孙子类来看看__init<em>subclass\</em>_是否会执行</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">C</span><span class="params">(B)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
+<p>输出结果为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
+<p>可以看到，执行结果和B一样,说明__init<em>subclass\</em>_是可以传递的。我们再来试试方法重写</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">D</span><span class="params">(A)</span>:</span></div><div class="line">  <span class="function"><span class="keyword">def</span> <span class="title">__init_subclass__</span><span class="params">(cls, *args, **kwargs)</span>:</span></div><div class="line">    print(<span class="string">'rewrite'</span>)</div><div class="line">    super().__init_subclass__(cls, *args, **kwargs)</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">F</span><span class="params">(D)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
+<p>执行结果为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rewrite</div><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
+<p>可以看到，__init<em>subclass\</em>_可以像常规的的方法一样实现重写。我们再来试试多重继承：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">E</span>:</span></div><div class="line">  <span class="function"><span class="keyword">def</span> <span class="title">__init_subclass__</span><span class="params">(cls, *args, **kwargs)</span>:</span></div><div class="line">    print(<span class="string">'other init subclass'</span>)</div><div class="line">    super().__init_subclass__(cls, *args, **kwargs)</div></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">G</span><span class="params">(A, E)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
+<p>执行结果为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
+<p>E中的__init<em>subclass\</em>_并没有执行，但是并没有有冲突错误。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">H</span><span class="params">(E, A)</span>:</span></div><div class="line">  ...</div></pre></td></tr></table></figure>
+<p>执行结果为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">other init subclass</div><div class="line">running init_subclass</div><div class="line">meta class</div></pre></td></tr></table></figure>
+<p>因为使用了supper()，A中的__init<em>subclass\</em>_得到了执行。看起来，多重继承的表现和普通的方法没什么两样。</p>
+<p>经过一系列实验，最后得到的结论是在同时使用metaclass、__init<em>subclass\</em>_, __new__与__init__的时候。在类的构建期依次调用__init<em>subclass\</em>_,与metaclass，而在实例构建的时候，依次调用__new__与__init__。</p>
+<p>而__init<em>subclass\</em>_的特性，和普通的方法区别不大。如果想有更多的了解，可以进一步参考<a href="https://www.python.org/dev/peps/pep-0487/" target="_blank" rel="external">PEP 487</a></p>
+<h2 id="利用-initsubclass-实现注册和回调机制"><a href="#利用-initsubclass-实现注册和回调机制" class="headerlink" title="利用__initsubclass\_实现注册和回调机制"></a>利用__init<em>subclass\</em>_实现注册和回调机制</h2><p>说完了__init<em>subclass\</em>_的用法以后，我们再具体看一下在这个实际案例中，如何利用这个魔术方法的特性，实现代码的解藕。</p>
+<p>先上代码：</p>
+<p><strong>pbs_sub.py</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#!/usr/bin/env python3.6</span></div><div class="line"><span class="keyword">from</span> software <span class="keyword">import</span> MainParser</div><div class="line"></div><div class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</div><div class="line">    parser = MainParser()</div><div class="line">    parser.run()</div></pre></td></tr></table></figure>
+<p><strong>software/__init__.py</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">from</span> .mainparser <span class="keyword">import</span> MainParser</div><div class="line"><span class="keyword">from</span> .powerflow <span class="keyword">import</span> PowerFlow</div></pre></td></tr></table></figure>
+<p><strong>software/mainparser.py</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div><div class="line">135</div><div class="line">136</div><div class="line">137</div><div class="line">138</div><div class="line">139</div><div class="line">140</div><div class="line">141</div><div class="line">142</div><div class="line">143</div><div class="line">144</div><div class="line">145</div><div class="line">146</div><div class="line">147</div><div class="line">148</div><div class="line">149</div><div class="line">150</div><div class="line">151</div><div class="line">152</div><div class="line">153</div><div class="line">154</div><div class="line">155</div><div class="line">156</div><div class="line">157</div><div class="line">158</div><div class="line">159</div><div class="line">160</div><div class="line">161</div><div class="line">162</div><div class="line">163</div><div class="line">164</div><div class="line">165</div><div class="line">166</div><div class="line">167</div><div class="line">168</div><div class="line">169</div><div class="line">170</div><div class="line">171</div><div class="line">172</div><div class="line">173</div><div class="line">174</div><div class="line">175</div><div class="line">176</div><div class="line">177</div><div class="line">178</div><div class="line">179</div><div class="line">180</div><div class="line">181</div><div class="line">182</div><div class="line">183</div><div class="line">184</div><div class="line">185</div><div class="line">186</div><div class="line">187</div><div class="line">188</div><div class="line">189</div><div class="line">190</div><div class="line">191</div><div class="line">192</div><div class="line">193</div><div class="line">194</div><div class="line">195</div><div class="line">196</div><div class="line">197</div><div class="line">198</div><div class="line">199</div><div class="line">200</div><div class="line">201</div><div class="line">202</div><div class="line">203</div><div class="line">204</div><div class="line">205</div><div class="line">206</div><div class="line">207</div><div class="line">208</div><div class="line">209</div><div class="line">210</div><div class="line">211</div><div class="line">212</div><div class="line">213</div><div class="line">214</div><div class="line">215</div><div class="line">216</div><div class="line">217</div><div class="line">218</div><div class="line">219</div><div class="line">220</div><div class="line">221</div><div class="line">222</div><div class="line">223</div><div class="line">224</div><div class="line">225</div><div class="line">226</div><div class="line">227</div><div class="line">228</div><div class="line">229</div><div class="line">230</div><div class="line">231</div><div class="line">232</div><div class="line">233</div><div class="line">234</div><div class="line">235</div><div class="line">236</div><div class="line">237</div><div class="line">238</div><div class="line">239</div><div class="line">240</div><div class="line">241</div><div class="line">242</div><div class="line">243</div><div class="line">244</div><div class="line">245</div><div class="line">246</div><div class="line">247</div><div class="line">248</div><div class="line">249</div><div class="line">250</div><div class="line">251</div><div class="line">252</div><div class="line">253</div><div class="line">254</div><div class="line">255</div><div class="line">256</div></pre></td><td class="code"><pre><div class="line"><span class="string">"""</span></div><div class="line">main parser</div><div class="line">"""</div><div class="line"><span class="comment"># author: thuhak.zhou@nio.com</span></div><div class="line"><span class="keyword">from</span> argparse <span class="keyword">import</span> ArgumentParser</div><div class="line"><span class="keyword">from</span> weakref <span class="keyword">import</span> WeakValueDictionary</div><div class="line"><span class="keyword">import</span> logging</div><div class="line"><span class="keyword">from</span> logging.handlers <span class="keyword">import</span> RotatingFileHandler</div><div class="line"><span class="keyword">import</span> json</div><div class="line"><span class="keyword">import</span> os</div><div class="line"><span class="keyword">from</span> os.path <span class="keyword">import</span> dirname, join, abspath, isfile, isdir</div><div class="line"><span class="keyword">from</span> string <span class="keyword">import</span> ascii_letters, digits</div><div class="line"><span class="keyword">import</span> pwd</div><div class="line"><span class="keyword">import</span> time</div><div class="line"></div><div class="line"><span class="keyword">import</span> sh</div><div class="line"></div><div class="line">__version__ = <span class="string">'2.1.0'</span></div><div class="line">__author__ = <span class="string">'thuhak.zhou@nio.com'</span></div><div class="line"></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">classproperty</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, func)</span>:</span></div><div class="line">        self.func = func</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__get__</span><span class="params">(self, instance, cls)</span>:</span></div><div class="line">        <span class="keyword">if</span> cls <span class="keyword">is</span> <span class="keyword">None</span>:</div><div class="line">            <span class="keyword">return</span> self</div><div class="line">        <span class="keyword">else</span>:</div><div class="line">            value = self.func(cls)</div><div class="line">            setattr(cls, self.func.__name__, value)</div><div class="line">            <span class="keyword">return</span> value</div><div class="line"></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">MainParser</span>:</span></div><div class="line">    <span class="string">"""</span></div><div class="line">    provide common args for pbs.</div><div class="line">    argument parser of subclasses will regist in _all_software variable</div><div class="line">    the request will be route to the right software subclass</div><div class="line">    """</div><div class="line">    _all_software = WeakValueDictionary()</div><div class="line">    logger = logging.getLogger(<span class="string">'pbs_sub'</span>)</div><div class="line">    PBS_SERVER = <span class="string">'p-shhq-hpc-pbs-m01'</span></div><div class="line">    QSUB = sh.Command(<span class="string">'/opt/pbs/bin/qsub'</span>)</div><div class="line">    script_base = join(dirname(abspath(__file__)), <span class="string">'run_scripts'</span>)</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></div><div class="line">        self.base_args = []</div><div class="line">        self.parser = ArgumentParser(description=f<span class="string">"This script is used for pbs job submission, version: &#123;__version__&#125;"</span>,</div><div class="line">                                     epilog=f<span class="string">'if you have any question or suggestion, please contact with &#123;__author__&#125;'</span>)</div><div class="line">        self.parser.add_argument(<span class="string">'-n'</span>, <span class="string">'--name'</span>, help=<span class="string">'job name'</span>)</div><div class="line">        self.parser.add_argument(<span class="string">'-l'</span>, <span class="string">'--log_level'</span>, choices=[<span class="string">'error'</span>, <span class="string">'info'</span>, <span class="string">'debug'</span>], default=<span class="string">'info'</span>,</div><div class="line">                                 help=<span class="string">'logging level'</span>)</div><div class="line">        self.parser.add_argument(<span class="string">'-W'</span>, <span class="string">'--wait'</span>, metavar=<span class="string">'JOB_ID'</span>, help=<span class="string">'depend on which job'</span>)</div><div class="line">        self.parser.add_argument(<span class="string">'--free_cores'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'show free cpu cores by queue'</span>)</div><div class="line">        software = self.parser.add_subparsers(dest=<span class="string">'software'</span>, help=<span class="string">'software list'</span>)</div><div class="line">        <span class="keyword">for</span> soft <span class="keyword">in</span> self._all_software:</div><div class="line">            cls = self._all_software[soft]</div><div class="line">            parser = software.add_parser(cls.__software__, help=f<span class="string">'(script version &#123;cls.__version__&#125;)'</span>)</div><div class="line">            cls.add_parser(parser)</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">add_parser</span><span class="params">(cls, parser: ArgumentParser)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        abc interface, implement this method in subclass</div><div class="line">        """</div><div class="line">        <span class="keyword">raise</span> NotImplementedError</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">handle</span><span class="params">(cls, args, base_args)</span> -&gt; list:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        abc interface, implement this method in subclass</div><div class="line"></div><div class="line">        args: argument args</div><div class="line">        base_args: all argument provided by main parser</div><div class="line">        :return all job ids in list</div><div class="line">        """</div><div class="line">        <span class="keyword">raise</span> NotImplementedError</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init_subclass__</span><span class="params">(cls, **kwargs)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        regist subclass</div><div class="line">        """</div><div class="line">        super().__init_subclass__(**kwargs)</div><div class="line">        <span class="keyword">if</span> <span class="keyword">not</span> getattr(cls, <span class="string">'__software__'</span>) <span class="keyword">or</span> <span class="keyword">not</span> getattr(cls, <span class="string">'__version__'</span>):</div><div class="line">            <span class="keyword">raise</span> NotImplementedError(<span class="string">'you need to set __software__ and __version__ attribute in your subclass'</span>)</div><div class="line">        cls._all_software[cls.__software__] = cls</div><div class="line"></div><div class="line"><span class="meta">    @classproperty</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">default_run</span><span class="params">(cls)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        default run script</div><div class="line">        """</div><div class="line">        run_script = join(cls.script_base, cls.__software__ + <span class="string">'.sh'</span>)</div><div class="line">        <span class="keyword">if</span> <span class="keyword">not</span> isfile(run_script):</div><div class="line">            cls.logger.error(f<span class="string">'you need to put the script &#123;run_script&#125; first'</span>)</div><div class="line">            exit(<span class="number">1</span>)</div><div class="line">        <span class="keyword">return</span> run_script</div><div class="line"></div><div class="line"><span class="meta">    @classproperty</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">pbs_nodes_data</span><span class="params">(cls)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        get node data from pbs</div><div class="line">        """</div><div class="line">        cls.logger.debug(<span class="string">'getting pbs node info'</span>)</div><div class="line">        <span class="keyword">try</span>:</div><div class="line">            PBSNODES = sh.Command(<span class="string">'/opt/pbs/bin/pbsnodes'</span>)</div><div class="line">            raw_nodedata = json.loads(PBSNODES(<span class="string">'-aS'</span>, <span class="string">'-F'</span>, <span class="string">'json'</span>).stdout)[<span class="string">'nodes'</span>]</div><div class="line">            raw_nodedata2 = json.loads(PBSNODES(<span class="string">'-Saj'</span>, <span class="string">'-F'</span>, <span class="string">'json'</span>).stdout)[<span class="string">'nodes'</span>]</div><div class="line">            <span class="keyword">for</span> k <span class="keyword">in</span> raw_nodedata.keys():</div><div class="line">                raw_nodedata[k].update(raw_nodedata2[k])</div><div class="line">            <span class="keyword">return</span> raw_nodedata</div><div class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</div><div class="line">            cls.logger.error(f<span class="string">'PBS error, can not get pbs node info, reason: &#123;str(e)&#125;'</span>)</div><div class="line">            exit(<span class="number">-1</span>)</div><div class="line"></div><div class="line"><span class="meta">    @classproperty</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">pbs_job_data</span><span class="params">(cls)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        get pbs job data</div><div class="line">        """</div><div class="line">        cls.logger.debug(<span class="string">'getting pbs job info'</span>)</div><div class="line">        <span class="keyword">try</span>:</div><div class="line">            QSTAT = sh.Command(<span class="string">'/opt/pbs/bin/qstat'</span>)</div><div class="line">            raw_data = sh.grep(QSTAT(<span class="string">'-f'</span>, <span class="string">'-F'</span>, <span class="string">'json'</span>), <span class="string">'-v'</span>, <span class="string">'Submit_arguments'</span>).stdout</div><div class="line">            job_data = json.loads(raw_data)[<span class="string">'Jobs'</span>]</div><div class="line">            <span class="keyword">return</span> job_data</div><div class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</div><div class="line">            cls.logger.error(f<span class="string">'PBS error, can not get pbs job info, reason: &#123;str(e)&#125;'</span>)</div><div class="line">            exit(<span class="number">-1</span>)</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">free_cores</span><span class="params">(cls, queue: str)</span> -&gt; int:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        get free cores in queue</div><div class="line">        """</div><div class="line">        count = <span class="number">0</span></div><div class="line">        cls.logger.debug(f<span class="string">'getting free cores in &#123;queue&#125;'</span>)</div><div class="line">        pbsdata = cls.pbs_nodes_data</div><div class="line">        <span class="keyword">for</span> node <span class="keyword">in</span> pbsdata.values():</div><div class="line">            <span class="keyword">if</span> node.get(<span class="string">'queue'</span>) == queue:</div><div class="line">                core_free = int(node.get(<span class="string">'ncpus f/t'</span>).split(<span class="string">'/'</span>)[<span class="number">0</span>])</div><div class="line">                count += core_free</div><div class="line">        cls.logger.debug(f<span class="string">'number of free cores in &#123;queue&#125; is &#123;count&#125;'</span>)</div><div class="line">        <span class="keyword">return</span> count</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">all_free_cores</span><span class="params">(cls)</span> -&gt; dict:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        get all free cores in all queues</div><div class="line">        """</div><div class="line">        <span class="keyword">from</span> collections <span class="keyword">import</span> defaultdict</div><div class="line">        cls.logger.debug(<span class="string">'getting free cores'</span>)</div><div class="line">        pbsdata = cls.pbs_nodes_data</div><div class="line">        ret = defaultdict(int)</div><div class="line">        <span class="keyword">for</span> node <span class="keyword">in</span> pbsdata.values():</div><div class="line">            queue = node.get(<span class="string">'queue'</span>)</div><div class="line">            <span class="keyword">if</span> queue:</div><div class="line">                ret[queue] += int(node.get(<span class="string">'ncpus f/t'</span>).split(<span class="string">'/'</span>)[<span class="number">0</span>])</div><div class="line">        <span class="keyword">return</span> ret</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">check_jobid</span><span class="params">(cls, jid: str)</span> -&gt; bool:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        check job id in pbs or not</div><div class="line">        """</div><div class="line">        cls.logger.debug(f<span class="string">'checking job &#123;jid&#125;'</span>)</div><div class="line">        <span class="keyword">return</span> jid <span class="keyword">in</span> cls.pbs_job_data</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get_jid_info</span><span class="params">(cls, jid: str)</span> -&gt; dict:</span></div><div class="line">        cls.logger.debug(f<span class="string">'getting job information for &#123;jid&#125;'</span>)</div><div class="line">        <span class="keyword">try</span>:</div><div class="line">            QSTAT = sh.Command(<span class="string">'/opt/pbs/bin/qstat'</span>)</div><div class="line">            raw_info = sh.grep(QSTAT(<span class="string">'-f'</span>, <span class="string">'-F'</span>, <span class="string">'json'</span>, jid), <span class="string">'-v'</span>, <span class="string">'Submit_arguments'</span>).stdout</div><div class="line">            job_info = json.loads(raw_info)[<span class="string">'Jobs'</span>][jid]</div><div class="line">            <span class="keyword">return</span> job_info</div><div class="line">        <span class="keyword">except</span> json.decoder.JSONDecodeError:</div><div class="line">            cls.logger.error(f<span class="string">'job &#123;jid&#125; is not json format'</span>)</div><div class="line">            cls.logger.debug(raw_info)</div><div class="line">            exit(<span class="number">1</span>)</div><div class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</div><div class="line">            cls.logger.error(f<span class="string">'unable to get information from pbs, reason: &#123;str(e)&#125;'</span>)</div><div class="line">            exit(<span class="number">1</span>)</div><div class="line"></div><div class="line"><span class="meta">    @staticmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">replace_id</span><span class="params">(args: list, jobid: str)</span> -&gt; <span class="keyword">None</span>:</span></div><div class="line">        <span class="string">"""this function will change the state of args"""</span></div><div class="line">        <span class="keyword">try</span>:</div><div class="line">            w_i = args.index(<span class="string">'-W'</span>)</div><div class="line">            args[w_i + <span class="number">1</span>] = f<span class="string">'depend=afterok:&#123;jobid&#125;'</span></div><div class="line">        <span class="keyword">except</span> ValueError:</div><div class="line">            args.extend([<span class="string">'-W'</span>, f<span class="string">'depend=afterok:&#123;jobid&#125;'</span>])</div><div class="line"></div><div class="line"><span class="meta">    @staticmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">fix_jobname</span><span class="params">(name: str)</span> -&gt; str:</span></div><div class="line">        valid_str = ascii_letters + digits + <span class="string">'_'</span></div><div class="line">        ret = name</div><div class="line">        <span class="keyword">for</span> c <span class="keyword">in</span> name:</div><div class="line">            <span class="keyword">if</span> c <span class="keyword">not</span> <span class="keyword">in</span> valid_str:</div><div class="line">                ret = ret.replace(c, <span class="string">'_'</span>)</div><div class="line">        <span class="keyword">return</span> ret</div><div class="line"></div><div class="line"><span class="meta">    @staticmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get_ncpu</span><span class="params">(queue: str)</span> -&gt; int:</span></div><div class="line">        <span class="keyword">return</span> <span class="number">16</span> <span class="keyword">if</span> queue == <span class="string">'cfdbs'</span> <span class="keyword">else</span> <span class="number">32</span></div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">run</span><span class="params">(self)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line">        program entry</div><div class="line">        """</div><div class="line">        uid = os.getuid()</div><div class="line">        user = pwd.getpwuid(uid)[<span class="number">0</span>]</div><div class="line">        args = self.parser.parse_args()</div><div class="line">        log_level = getattr(logging, args.log_level.upper())</div><div class="line">        handlers = [logging.StreamHandler()]</div><div class="line">        logdir = <span class="string">'/var/log/pbs_sub'</span></div><div class="line">        <span class="keyword">if</span> isdir(logdir):</div><div class="line">            loghandler = RotatingFileHandler(join(logdir, user + <span class="string">'.log'</span>), maxBytes=<span class="number">10</span>*<span class="number">1024</span>*<span class="number">1024</span>, backupCount=<span class="number">3</span>, encoding=<span class="string">'utf-8'</span>)</div><div class="line">            handlers.append(loghandler)</div><div class="line">        logging.basicConfig(level=log_level, format=<span class="string">'%(asctime)s [%(levelname)s]: %(message)s'</span>,</div><div class="line">                            datefmt=<span class="string">"%Y-%m-%d %H:%M:%S"</span>, handlers=handlers)</div><div class="line">        <span class="keyword">for</span> handler <span class="keyword">in</span> logging.root.handlers:</div><div class="line">            handler.addFilter(logging.Filter(<span class="string">'pbs_sub'</span>))</div><div class="line">        <span class="keyword">if</span> args.free_cores:</div><div class="line">            free_cores = self.all_free_cores()</div><div class="line">            ali = max([len(x) <span class="keyword">for</span> x <span class="keyword">in</span> free_cores.keys()]) + <span class="number">3</span></div><div class="line">            <span class="keyword">for</span> q, c <span class="keyword">in</span> free_cores.items():</div><div class="line">                space = <span class="string">' '</span> * (ali - len(q))</div><div class="line">                print(f<span class="string">'&#123;q&#125;:&#123;space&#125;&#123;c&#125;'</span>)</div><div class="line">            <span class="keyword">return</span></div><div class="line">        software = args.software</div><div class="line">        email = user + <span class="string">'@nio.com'</span></div><div class="line">        waitfor = args.wait</div><div class="line">        base_args = [<span class="string">'-m'</span>, <span class="string">'abe'</span>, <span class="string">'-M'</span>, email]</div><div class="line">        <span class="keyword">if</span> waitfor:</div><div class="line">            <span class="keyword">if</span> <span class="string">'.'</span> <span class="keyword">not</span> <span class="keyword">in</span> waitfor:</div><div class="line">                waitfor = waitfor + <span class="string">'.'</span> + self.PBS_SERVER</div><div class="line">            <span class="keyword">if</span> <span class="keyword">not</span> self.check_jobid(waitfor):</div><div class="line">                self.logger.debug(f<span class="string">'invalid job id &#123;waitfor&#125;'</span>)</div><div class="line">                exit(<span class="number">1</span>)</div><div class="line">            var_w = f<span class="string">'depend=afterok:&#123;waitfor&#125;'</span></div><div class="line">            base_args.extend([<span class="string">'-W'</span>, var_w])</div><div class="line">        <span class="keyword">if</span> software <span class="keyword">in</span> self._all_software:</div><div class="line">            jids = self._all_software[software].handle(args, base_args)</div><div class="line">            time.sleep(<span class="number">1</span>)</div><div class="line">            <span class="keyword">for</span> jid <span class="keyword">in</span> jids:</div><div class="line">                job_info = self.get_jid_info(jid)</div><div class="line">                job_stat = job_info.get(<span class="string">'job_state'</span>)</div><div class="line">                info = f<span class="string">'job &#123;jid&#125; is in state &#123;job_stat&#125;'</span></div><div class="line">                comment = job_info.get(<span class="string">'comment'</span>)</div><div class="line">                <span class="keyword">if</span> comment:</div><div class="line">                    info += f<span class="string">',comment: &#123;comment&#125;'</span></div><div class="line">                self.logger.info(info)</div><div class="line">        <span class="keyword">else</span>:</div><div class="line">            self.parser.print_help()</div></pre></td></tr></table></figure>
+<p><strong>software/powerflow.py</strong></p>
+<p>因为涉及到具体的业务逻辑，因此整个实现就被我省略了，这里只是为了演示整个结构</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># author: thuhak.zhou@nio.com</span></div><div class="line"><span class="keyword">import</span> os</div><div class="line"><span class="keyword">import</span> random</div><div class="line"><span class="keyword">from</span> copy <span class="keyword">import</span> deepcopy</div><div class="line"><span class="keyword">from</span> glob <span class="keyword">import</span> glob</div><div class="line"><span class="keyword">import</span> re</div><div class="line"></div><div class="line"><span class="keyword">import</span> sh</div><div class="line"><span class="keyword">from</span> .mainparser <span class="keyword">import</span> MainParser</div><div class="line"></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">PowerFlow</span><span class="params">(MainParser)</span>:</span></div><div class="line">    __software__ = <span class="string">'powerflow'</span></div><div class="line">    __version__ = <span class="string">'2.1.0'</span></div><div class="line">    base_dir = <span class="string">'/home/hpcsw/EXA/powerflow'</span></div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">add_parser</span><span class="params">(cls, parser)</span>:</span></div><div class="line">        parser.add_argument(<span class="string">'-q'</span>, <span class="string">'--queue'</span>, choices=[<span class="string">"cfd"</span>, <span class="string">"cfd2"</span>, <span class="string">"cfdbs"</span>], default=<span class="string">"cfdbs"</span>, help=<span class="string">'queue of job'</span>)</div><div class="line">        parser.add_argument(<span class="string">'-c'</span>, <span class="string">'--core'</span>, type=int, choices=[<span class="number">32</span>, <span class="number">64</span>, <span class="number">128</span>, <span class="number">256</span>, <span class="number">512</span>, <span class="number">768</span>, <span class="number">1024</span>],</div><div class="line">                               help=<span class="string">'how many cpu cores you wanna use. default value is half of the free cores in your queue'</span>)</div><div class="line">        parser.add_argument(<span class="string">'jobfile'</span>, help=<span class="string">'job file'</span>)</div><div class="line">        parser.add_argument(<span class="string">'-v'</span>, <span class="string">'--version'</span>,</div><div class="line">                               choices=[<span class="string">"4.4d"</span>, <span class="string">"5.3b"</span>, <span class="string">"5.3c"</span>, <span class="string">"5.4b"</span>, <span class="string">"5.5a"</span>, <span class="string">"5.5b"</span>, <span class="string">"5.5c"</span>, <span class="string">"5.5c2"</span>, <span class="string">"6-2019"</span>],</div><div class="line">                               default=<span class="string">"5.5b"</span>, help=<span class="string">'version of powerflow'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--nts'</span>, metavar=<span class="string">'TIMESTEPS'</span>, type=int, help=<span class="string">'num timesteps'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--seed_bondaries'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'set seed_bondaries'</span>)</div><div class="line">        pow_group = parser.add_mutually_exclusive_group()</div><div class="line">        pow_group.add_argument(<span class="string">'-r'</span>, <span class="string">'--resume'</span>, metavar=<span class="string">'RESUME_FILE'</span>, help=<span class="string">'resume file'</span>)</div><div class="line">        pow_group.add_argument(<span class="string">'-s'</span>, <span class="string">'--seed'</span>, metavar=<span class="string">'SEED_FILE'</span>, help=<span class="string">'seed file'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--mme'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'mme checkpoint at end'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--full'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'full checkpoint at end'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--pt'</span>, action=<span class="string">'store_true'</span>, help=<span class="string">'enable powerTHERM'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--dis'</span>, choices=[<span class="string">'only'</span>, <span class="string">'full'</span>],</div><div class="line">                               help=<span class="string">'run discretize, when you set only, just run dis job, if your set full, powerflow job will be run after dis job is finish'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--vr'</span>, metavar=<span class="string">'LEVEL'</span>, type=int, help=<span class="string">'suppress vr level for discretize job'</span>)</div><div class="line">        parser.add_argument(<span class="string">'--postacoustics'</span>, choices=[<span class="string">'only'</span>, <span class="string">'full'</span>],</div><div class="line">                               help=<span class="string">'run powerflow post process, contact with fuchao.wang@nio.com to get more information'</span>)</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">default_cores</span><span class="params">(cls, queue)</span>:</span></div><div class="line">        total_cores = cls.free_cores(queue)</div><div class="line">        <span class="keyword">for</span> c <span class="keyword">in</span> (<span class="number">2048</span>, <span class="number">1536</span>, <span class="number">1024</span>, <span class="number">960</span>, <span class="number">512</span>):</div><div class="line">            <span class="keyword">if</span> total_cores &gt;= c:</div><div class="line">                <span class="keyword">return</span> c // <span class="number">2</span></div><div class="line">        <span class="keyword">return</span> <span class="number">128</span></div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">handle</span><span class="params">(cls, args, base_args)</span>:</span></div><div class="line">        jids = []</div><div class="line">        ...</div><div class="line">        <span class="keyword">return</span> jids</div></pre></td></tr></table></figure>
+<p>从整个代码结构上， 我们可以看到。</p>
+<p>公共的逻辑被放置到了MainParser中，而powerflow的业务逻辑，则被独立开来，放置到了一个单独的文件内。并通过类的继承，复用了公用的类的方法，变量，以及数据缓存。</p>
+<p>整个软件的逻辑如下:</p>
+<ol>
+<li>在MainParser类中，通过__init<em>subclass\</em>_,在类还在创建过程中，就将整个类对象放置到自己的全局字典中。而类创建代码，则是在import的时候执行</li>
+<li>在MainPasrer进行实例初始化的时候，依次调用所有子类的add_parser方法，实现所有插件parser的注册</li>
+<li>最后在实例化的mainparser对象中，通过run方法，解析用户的输入，并路由给对应的插件handle处理方法。拿到对应handle的处理后，在进行下一道工序的处理</li>
+</ol>
+<p>所有的MainParser的类中，所有的子类均没有进行实例化，因为并没有必要。唯一实例化的是MainParser本身。</p>
+<p>而当你需要添加一个新的计算软件。那么你只需要:</p>
+<p>在software中放置一个单独的文件，写一个MainParser的子类.</p>
+<p>在这个子类中，需要实现：</p>
+<ul>
+<li>定义__software__,以及__version__类变量。注册插件信息</li>
+<li>实现add_parser类方法，提供子命令的入口给mainparser回调</li>
+<li>实现handle类方法，提供给mainparser回调</li>
+<li>最后通过修改sotware/_<em>init\</em>_.py将新的代码引入即可</li>
+</ul>
+<p>如果觉得每次都要import一下新的代码很烦，可以定制import的过程做自动加载，但是目前来看，并没有多少必要来做这个事，还是从简的好。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过使用python元编程，我们往往可以使用极少的代码就可以实现比较复杂的设计模式。这也python是让人非常上瘾的一点。</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/12/saltstack7/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="thuhak">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.jpg">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="fightclub">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="fightclub" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                
+                <a class="post-title-link" href="/2019/02/12/saltstack7/" itemprop="url">
+                  saltstack7
+                </a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-12T10:21:42+08:00">
+                2019-02-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
   <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/12/saltstack6/">
 
   <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1631,340 +1965,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/12/02/export-gpo/">
-
-  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <meta itemprop="name" content="thuhak">
-    <meta itemprop="description" content="">
-    <meta itemprop="image" content="/images/avatar.jpg">
-  </span>
-
-  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-    <meta itemprop="name" content="fightclub">
-    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
-      <img style="display:none;" itemprop="url image" alt="fightclub" src="">
-    </span>
-  </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-            
-            
-              
-                
-                <a class="post-title-link" href="/2016/12/02/export-gpo/" itemprop="url">
-                  将组策略导出成excel
-                </a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2016-12-02T22:21:59+08:00">
-                2016-12-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/脚本/" itemprop="url" rel="index">
-                    <span itemprop="name">脚本</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-
-          
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>最近有个需求，要把windows组策略导出成excel，这真是无聊的需求。本来可以直接导出html格式还是很好看的。非要做这种无聊的事情。</p>
-<p>因为组策略直接的导出是xml或者html格式，相当于nosql的文档类型。而excel则是类似关系数据库的类型，因此需要做些格式转换。</p>
-<h3 id="组策略导出"><a href="#组策略导出" class="headerlink" title="组策略导出"></a>组策略导出</h3><p>组策略导出使用了powershell,将全部组策略导出到指定路径下。当然也可以指定ldap的路径来进行导出。</p>
-<p><code>ExportGPReport.ps1</code>:</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">param</span>(</div><div class="line">[string]<span class="variable">$LdapPath</span> = <span class="string">"All"</span>,</div><div class="line">[string]<span class="variable">$OutPut</span> = $(pwd).Path</div><div class="line">)</div><div class="line"></div><div class="line"><span class="keyword">if</span>(<span class="variable">$LdapPath</span> <span class="nomarkup">-eq</span> <span class="string">"ALL"</span>)&#123;</div><div class="line"><span class="variable">$s</span>=Get-GPO -All</div><div class="line">&#125;</div><div class="line"><span class="keyword">else</span>&#123;</div><div class="line"><span class="variable">$s</span>=(Get-GPInheritance -Target <span class="variable">$LdapPath</span>).GpoLinks</div><div class="line">&#125;</div><div class="line"><span class="keyword">foreach</span> (<span class="variable">$gpo</span> <span class="keyword">in</span> <span class="variable">$s</span>)&#123;</div><div class="line"><span class="variable">$out</span>=<span class="variable">$OutPut</span>+<span class="string">"\"</span>+<span class="variable">$gpo</span>.DisplayName+<span class="string">".html"</span></div><div class="line">Get-GPOReport -Name <span class="variable">$gpo</span>.DisplayName -ReportType Html -Path <span class="variable">$out</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>使用方法例如<code>.\ExportGPReport.ps1 -OutPut c:\gpo</code></p>
-<p><code>Get-GPOReport</code>导出xml格式的文档会损失很多信息，看来只能导出成html再进行解析了。</p>
-<h3 id="格式转换"><a href="#格式转换" class="headerlink" title="格式转换"></a>格式转换</h3><p>如果利用excel直接进行转换，效果简直惨不忍睹。因此只能自己设想样式进行导出。我先预想使用合并单元格的方式描绘树状图。但是导出的效果非常之烂，因此只能换一种格式。采用高级标题使用更多单元格合并的方式来展现。虽然还是很难看，不过稍微好了点。</p>
-<p>不知道怎么用powershell实现，于是又拿起了熟悉的python。<br><code>gpo.py</code></p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div><div class="line">135</div><div class="line">136</div><div class="line">137</div><div class="line">138</div><div class="line">139</div><div class="line">140</div><div class="line">141</div><div class="line">142</div><div class="line">143</div><div class="line">144</div><div class="line">145</div><div class="line">146</div><div class="line">147</div><div class="line">148</div><div class="line">149</div><div class="line">150</div><div class="line">151</div><div class="line">152</div><div class="line">153</div><div class="line">154</div><div class="line">155</div><div class="line">156</div><div class="line">157</div><div class="line">158</div><div class="line">159</div><div class="line">160</div><div class="line">161</div><div class="line">162</div><div class="line">163</div><div class="line">164</div><div class="line">165</div><div class="line">166</div><div class="line">167</div><div class="line">168</div><div class="line">169</div><div class="line">170</div><div class="line">171</div><div class="line">172</div><div class="line">173</div><div class="line">174</div><div class="line">175</div><div class="line">176</div><div class="line">177</div><div class="line">178</div><div class="line">179</div><div class="line">180</div><div class="line">181</div><div class="line">182</div><div class="line">183</div><div class="line">184</div><div class="line">185</div><div class="line">186</div><div class="line">187</div><div class="line">188</div><div class="line">189</div><div class="line">190</div><div class="line">191</div><div class="line">192</div><div class="line">193</div><div class="line">194</div><div class="line">195</div><div class="line">196</div><div class="line">197</div><div class="line">198</div><div class="line">199</div><div class="line">200</div><div class="line">201</div><div class="line">202</div><div class="line">203</div><div class="line">204</div><div class="line">205</div><div class="line">206</div><div class="line">207</div><div class="line">208</div><div class="line">209</div><div class="line">210</div><div class="line">211</div><div class="line">212</div><div class="line">213</div><div class="line">214</div><div class="line">215</div><div class="line">216</div><div class="line">217</div><div class="line">218</div><div class="line">219</div><div class="line">220</div><div class="line">221</div><div class="line">222</div><div class="line">223</div><div class="line">224</div><div class="line">225</div><div class="line">226</div><div class="line">227</div><div class="line">228</div><div class="line">229</div><div class="line">230</div><div class="line">231</div><div class="line">232</div><div class="line">233</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#!/usr/bin/env python3</span></div><div class="line"><span class="keyword">import</span> os.path</div><div class="line"><span class="keyword">import</span> weakref</div><div class="line"><span class="keyword">from</span> glob <span class="keyword">import</span> glob</div><div class="line"><span class="keyword">from</span> pyquery <span class="keyword">import</span> PyQuery <span class="keyword">as</span> pq</div><div class="line"><span class="keyword">from</span> argparse <span class="keyword">import</span> ArgumentParser</div><div class="line"><span class="keyword">import</span> xlwt</div><div class="line"></div><div class="line"></div><div class="line">style = xlwt.XFStyle()</div><div class="line">ali = xlwt.Alignment()</div><div class="line">borders = xlwt.Borders()</div><div class="line">borders.left = xlwt.Borders.THICK</div><div class="line">borders.right = xlwt.Borders.THICK</div><div class="line">borders.top = xlwt.Borders.THICK</div><div class="line">borders.bottom = xlwt.Borders.THICK</div><div class="line">ali.horz = xlwt.Alignment.HORZ_CENTER</div><div class="line">ali.vert = xlwt.Alignment.VERT_CENTER</div><div class="line">ali.wrap = xlwt.Alignment.WRAP_AT_RIGHT</div><div class="line">style.alignment = ali</div><div class="line">style.borders = borders</div><div class="line"></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Node</span>:</span></div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></div><div class="line">        self._parent = <span class="keyword">None</span></div><div class="line">        self.height = <span class="number">1</span></div><div class="line">        self.level = <span class="number">1</span></div><div class="line"></div><div class="line"><span class="meta">    @property</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">parent</span><span class="params">(self)</span>:</span></div><div class="line">        <span class="keyword">return</span> self._parent <span class="keyword">if</span> self._parent <span class="keyword">is</span> <span class="keyword">None</span> <span class="keyword">else</span> self._parent()</div><div class="line"></div><div class="line"><span class="meta">    @parent.setter</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">parent</span><span class="params">(self,node)</span>:</span></div><div class="line">        self._parent = weakref.ref(node)</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__repr__</span><span class="params">(self)</span>:</span></div><div class="line">        <span class="keyword">return</span> type(self) + <span class="string">'height: %s'</span> % self.height</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">show</span><span class="params">(self)</span>:</span></div><div class="line">        <span class="keyword">pass</span></div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_grow</span><span class="params">(self, h)</span>:</span></div><div class="line">        <span class="keyword">if</span> h == <span class="number">0</span>:</div><div class="line">            <span class="keyword">return</span></div><div class="line">        <span class="keyword">else</span>:</div><div class="line">            p = self</div><div class="line">            p.height += h</div><div class="line">            <span class="keyword">if</span> p.parent <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span>:</div><div class="line">                p = p.parent</div><div class="line">                p._grow(h)</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_dive</span><span class="params">(self, d)</span>:</span></div><div class="line">        <span class="keyword">pass</span></div><div class="line"></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Branch</span><span class="params">(Node)</span>:</span></div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, name)</span>:</span></div><div class="line">        super(Branch, self).__init__()</div><div class="line">        self.name = name</div><div class="line">        self.children = []</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__str__</span><span class="params">(self)</span>:</span></div><div class="line">        s = <span class="string">'Node:%s,height:%s'</span> % (self.name, self.height)</div><div class="line">        <span class="keyword">return</span> s</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">show</span><span class="params">(self)</span>:</span></div><div class="line">        print(self)</div><div class="line">        <span class="keyword">for</span> child <span class="keyword">in</span> self.children:</div><div class="line">            child.show()</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">add_node</span><span class="params">(self, node)</span>:</span></div><div class="line">        width = len(self.children)</div><div class="line">        self.children.append(node)</div><div class="line">        node.parent = self</div><div class="line">        node._dive(self.level)</div><div class="line">        <span class="keyword">if</span> width &gt;= <span class="number">1</span>:</div><div class="line">            self._grow(node.height)</div><div class="line">        <span class="keyword">else</span>:</div><div class="line">            self._grow(node.height - <span class="number">1</span>)</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_dive</span><span class="params">(self, d)</span>:</span></div><div class="line">        self.level += d</div><div class="line">        <span class="keyword">for</span> child <span class="keyword">in</span> self.children:</div><div class="line">            child._dive(d)</div><div class="line"></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Leaf</span><span class="params">(Node)</span>:</span></div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></div><div class="line">        super(Leaf, self).__init__()</div><div class="line">        self.table = []</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__str__</span><span class="params">(self)</span>:</span></div><div class="line">        <span class="keyword">return</span> str(self.height)</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">show</span><span class="params">(self)</span>:</span></div><div class="line">        print(self)</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">add_data</span><span class="params">(self, data)</span>:</span></div><div class="line">        width = len(data)</div><div class="line">        <span class="keyword">if</span> self.table == []:</div><div class="line">            width -= <span class="number">1</span></div><div class="line">        self.table.extend(data)</div><div class="line">        self._grow(width)</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_dive</span><span class="params">(self, d)</span>:</span></div><div class="line">        self.level += d</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">walk</span><span class="params">(p, cur_node)</span>:</span></div><div class="line">    <span class="keyword">for</span> n <span class="keyword">in</span> p.children():</div><div class="line">        child = pq(n)</div><div class="line">        <span class="keyword">if</span> child.attr(<span class="string">'class'</span>).startswith(<span class="string">'he'</span>):</div><div class="line">            <span class="keyword">for</span> g <span class="keyword">in</span> child.children():</div><div class="line">                grandchild = pq(g)</div><div class="line">                <span class="keyword">if</span> grandchild.attr(<span class="string">'class'</span>) == <span class="string">'sectionTitle'</span>:</div><div class="line">                    node = Branch(child.text())</div><div class="line">                    cur_node.add_node(node)</div><div class="line">                    cur_node = node</div><div class="line">                <span class="keyword">elif</span> grandchild.is_(<span class="string">'table'</span>):</div><div class="line">                    leaf = Leaf()</div><div class="line">                    data = []</div><div class="line">                    <span class="keyword">for</span> t <span class="keyword">in</span> grandchild(<span class="string">'tr'</span>):</div><div class="line">                        td = pq(t).find(<span class="string">'td'</span>)</div><div class="line">                        <span class="keyword">if</span> <span class="keyword">not</span> td.attr(<span class="string">'colspan'</span>) <span class="keyword">and</span> td.eq(<span class="number">1</span>).text() != <span class="string">''</span>:</div><div class="line">                            data.append((td.eq(<span class="number">0</span>).text(), td.eq(<span class="number">1</span>).text()))</div><div class="line">                    cur_node.add_node(leaf)</div><div class="line">                    leaf.add_data(data)</div><div class="line">        <span class="keyword">elif</span> child.attr(<span class="string">'class'</span>) == <span class="string">'container'</span>:</div><div class="line">            walk(child, cur_node)</div><div class="line">        <span class="keyword">else</span>:</div><div class="line">            <span class="keyword">continue</span></div><div class="line"></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">GPOTree</span>:</span></div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, title, ctree, utree)</span>:</span></div><div class="line">        self.title = title</div><div class="line">        self.ctree = ctree</div><div class="line">        self.utree = utree</div><div class="line"></div><div class="line"><span class="meta">    @classmethod</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">loadfile</span><span class="params">(cls, filename)</span>:</span></div><div class="line">        gpo = cls.__new__(cls)</div><div class="line">        <span class="keyword">with</span> open(filename, <span class="string">'rt'</span>, encoding=<span class="string">'utf-16'</span>) <span class="keyword">as</span> f:</div><div class="line">            d = pq(<span class="string">''</span>.join(f.readlines()))</div><div class="line">        gpo.title = d(<span class="string">'head'</span>).find(<span class="string">'title'</span>).text().replace(<span class="string">' '</span>, <span class="string">'_'</span>)[:<span class="number">31</span>]</div><div class="line">        p = g = d(<span class="string">'div.gposummary'</span>)</div><div class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">10</span>):</div><div class="line">            p = p.next()</div><div class="line">            <span class="keyword">if</span> p.text() == <span class="string">'计算机配置(已启用)'</span>:</div><div class="line">                c = p.next()</div><div class="line">                C = Branch(<span class="string">'计算机配置'</span>)</div><div class="line">                walk(c, C)</div><div class="line">                gpo.ctree = C</div><div class="line">            <span class="keyword">elif</span> p.text() == <span class="string">'用户配置(已启用)'</span>:</div><div class="line">                u = p.next()</div><div class="line">                U = Branch(<span class="string">'用户配置'</span>)</div><div class="line">                walk(u, U)</div><div class="line">                gpo.utree = U</div><div class="line">                <span class="keyword">break</span></div><div class="line">        <span class="keyword">return</span> gpo</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">export_to_excel_tree</span><span class="params">(self, filename)</span>:</span></div><div class="line">        <span class="function"><span class="keyword">def</span> <span class="title">traval</span><span class="params">(node, ws, x, y, style)</span>:</span></div><div class="line">            <span class="keyword">if</span> type(node) <span class="keyword">is</span> Branch:</div><div class="line">                ws.write_merge(x, x + node.height - <span class="number">1</span>, y, y, node.name, style)</div><div class="line">                <span class="comment"># print('write_merge(%s,%s,%s,%s,%s)'%(x,x+node.height-1,y,y,node.name))</span></div><div class="line">                y += <span class="number">1</span></div><div class="line">                <span class="keyword">for</span> child <span class="keyword">in</span> node.children:</div><div class="line">                    traval(child, ws, x, y, style)</div><div class="line">                    x += child.height</div><div class="line">            <span class="keyword">elif</span> type(node) <span class="keyword">is</span> Leaf:</div><div class="line">                <span class="keyword">for</span> i, entry <span class="keyword">in</span> enumerate(node.table):</div><div class="line">                    ws.write_merge(x + i, x + i, y, y, entry[<span class="number">0</span>], style)</div><div class="line">                    ws.write_merge(x + i, x + i, y + <span class="number">1</span>, y + <span class="number">1</span>, entry[<span class="number">1</span>], style)</div><div class="line">                    <span class="comment"># print('write_merge(%s,%s,%s,%s,%s)'%(x+i,x+i,y,y,entry))</span></div><div class="line">            <span class="keyword">else</span>:</div><div class="line">                <span class="keyword">return</span></div><div class="line">        wb = xlwt.Workbook(encoding=<span class="string">'utf-8'</span>)</div><div class="line">        ws = wb.add_sheet(self.title)</div><div class="line">        traval(self.ctree, ws, <span class="number">0</span>, <span class="number">0</span>, style)</div><div class="line">        traval(self.utree, ws, self.ctree.height, self.ctree.height, style)</div><div class="line">        wb.save(filename)</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">export_to_excel_table</span><span class="params">(self, filename)</span>:</span></div><div class="line">        header_map = &#123;<span class="number">1</span>: <span class="number">5</span>, <span class="number">2</span>: <span class="number">4</span>, <span class="number">3</span>: <span class="number">3</span>, <span class="number">4</span>: <span class="number">2</span>, <span class="number">5</span>: <span class="number">1</span>&#125;</div><div class="line"></div><div class="line">        <span class="function"><span class="keyword">def</span> <span class="title">traval</span><span class="params">(node, ws)</span>:</span></div><div class="line">            <span class="keyword">nonlocal</span> line</div><div class="line">            <span class="keyword">if</span> type(node) <span class="keyword">is</span> Branch:</div><div class="line">                ws.write_merge(line, line, <span class="number">0</span>, header_map.get(</div><div class="line">                    node.level, <span class="number">1</span>), node.name, style)</div><div class="line">                line += <span class="number">2</span></div><div class="line">                <span class="keyword">for</span> child <span class="keyword">in</span> node.children:</div><div class="line">                    traval(child, ws)</div><div class="line">            <span class="keyword">elif</span> type(node) <span class="keyword">is</span> Leaf:</div><div class="line">                <span class="keyword">for</span> i, entry <span class="keyword">in</span> enumerate(node.table):</div><div class="line">                    ws.write(line + i, <span class="number">0</span>, entry[<span class="number">0</span>], style)</div><div class="line">                    ws.write(line + i, <span class="number">1</span>, entry[<span class="number">1</span>], style)</div><div class="line">                line += node.height + <span class="number">2</span></div><div class="line">            <span class="keyword">else</span>:</div><div class="line">                <span class="keyword">return</span></div><div class="line">        wb = xlwt.Workbook(encoding=<span class="string">'utf-8'</span>)</div><div class="line">        ws = wb.add_sheet(self.title)</div><div class="line">        line = <span class="number">0</span></div><div class="line">        traval(self.ctree, ws)</div><div class="line">        traval(self.utree, ws)</div><div class="line">        wb.save(filename)</div><div class="line"></div><div class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</div><div class="line">    parser = ArgumentParser()</div><div class="line">    parser.add_argument(<span class="string">'-s'</span>, <span class="string">'--source'</span>, type=str,</div><div class="line">                        required=<span class="keyword">True</span>, help=<span class="string">'组策略导出文件存储位置'</span>)</div><div class="line">    parser.add_argument(<span class="string">'-o'</span>, <span class="string">'--output'</span>, type=str,</div><div class="line">                        required=<span class="keyword">True</span>, help=<span class="string">'组策略文件导出位置'</span>)</div><div class="line">    args = parser.parse_args()</div><div class="line">    source = args.source</div><div class="line">    output = args.output</div><div class="line">    <span class="keyword">if</span> <span class="keyword">not</span> os.path.isdir(source):</div><div class="line">        <span class="keyword">raise</span> SystemExit(<span class="string">'source目录不存在'</span>)</div><div class="line">    <span class="keyword">if</span> <span class="keyword">not</span> os.path.isdir(output):</div><div class="line">        <span class="keyword">raise</span> SystemExit(<span class="string">'output目录不存在'</span>)</div><div class="line">    gpo_files = glob(os.path.join(source, <span class="string">'*.html'</span>))</div><div class="line">    <span class="keyword">for</span> f <span class="keyword">in</span> gpo_files:</div><div class="line">        gpo = GPOTree.loadfile(f)</div><div class="line">        o = os.path.join(output, f.replace(</div><div class="line">            source, output).replace(<span class="string">'html'</span>, <span class="string">'xls'</span>))</div><div class="line">        gpo.export_to_excel_table(o)</div></pre></td></tr></table></figure>
-<p>使用方法举例：</p>
-<p><code>python3 -s &#39;c:\gpo&#39; -o e:\grouppolicy</code></p>
-<h4 id="其他问题"><a href="#其他问题" class="headerlink" title="其他问题"></a>其他问题</h4><ul>
-<li>本来想着把两个脚本粘起来，后来又想想似乎没什么必要。</li>
-<li>原来想着使用单个文件多个表单的方式。结果发现xlutils copy的表单居然没有style。再想想不值得再花时间弄了，就这样吧。</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/12/02/ntopng/">
-
-  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <meta itemprop="name" content="thuhak">
-    <meta itemprop="description" content="">
-    <meta itemprop="image" content="/images/avatar.jpg">
-  </span>
-
-  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-    <meta itemprop="name" content="fightclub">
-    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
-      <img style="display:none;" itemprop="url image" alt="fightclub" src="">
-    </span>
-  </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-            
-            
-              
-                
-                <a class="post-title-link" href="/2016/12/02/ntopng/" itemprop="url">
-                  ntopng使用简介
-                </a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2016-12-02T21:49:25+08:00">
-                2016-12-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/网络/" itemprop="url" rel="index">
-                    <span itemprop="name">网络</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-
-          
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="ntopng是什么？"><a href="#ntopng是什么？" class="headerlink" title="ntopng是什么？"></a>ntopng是什么？</h3><p><a href="http://www.ntop.org/products/traffic-analysis/ntop/" target="_blank" rel="external">ntopng</a>是一个开源的网络流量分析平台。是传统的网络监控平台ntop的新一代产品。<br>通常我们使用wireshark抓包工具对特定的网络接口进行抓包来进行详细流量分析。<br>但是，这样操作会有以下几个问题：</p>
-<ol>
-<li>前期准备十分麻烦。如果采取旁路抓包的方式，需要先在交换机做流镜像，并且需要在该端口进行抓包。</li>
-<li>wireshark需要耗费大量内存，导致程序不稳定。难以进行持久的抓包统计分析。</li>
-<li>无法进行大范围统计，不能了解全网网络情况。</li>
-</ol>
-<p>我们再来看ntopng是如何解决以上几个问题的。</p>
-<ol>
-<li>ntopng是一个B/S架构的平台。管理员只需要配置好采集部分就可以通过浏览器查看统计结果</li>
-<li>ntopng专门为大数据量采集进行设计。在不需要持续存储的情况下，采用rrd数据库进行数据保存。而且ntopng社区专门设计了一个高性能的持续存储方案n2disk进行大量数据包采集。</li>
-<li>ntopng使用配套的nprobe来支持sflow,netflow流量采集协议。能够以极小的成本进行大范围的流量分析。</li>
-</ol>
-<h3 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h3><p>ntopng的部署有源码安装和二进制安装两种方式。<br>源码安装需要从社区官网下载源码编译，而二进制安装需要切换到互联网，把yum指向指定的软件安装源进行安装。<br>社区网站有下面几个产品：</p>
-<ul>
-<li>ntopng  —web平台</li>
-<li>nprobe  —一个可扩展的采集器。支持多种采集架构和插件，并且支持sflow协议和netflow协议采集。</li>
-<li>n2disk  —抓包数据存储库</li>
-<li>pf_ring —高性能的抓包库，可以让普通pc也能进行大数据包采集</li>
-<li>ndpi    —跨平台的高层协议解析库</li>
-<li>nbox    —小型嵌入式采集系统</li>
-</ul>
-<p>我都安装了，但实际使用起来只有ntopng和nprobe有用到。ndpi已经集成在ntopng内部。其他组件并没有用到。<br>另外，二进制安装默认安装的是企业试用版，如果一段时间不激活，会降成社区版。<br>企业版的dashboard界面和社区版有所不同，并且提供了报表功能。对，社区版不含报表功能。升级企业版需要150欧元。</p>
-<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>我把ntopng和nprobe装在同一台虚拟机上。nprobe做sflow采集，将结果发送到本地的zmq消息队列上，ntopng再从该队列读取信息。<br>nprobe启动参数如下:<br>    <figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">/usr/<span class="built_in">local</span>/bin/nprobe --zmq tcp://127.0.0.1:5556 -i none -n none --collector-port 6343 -b 2</div></pre></td></tr></table></figure></p>
-<p>由于ntopng参数较多，我把他们放入了配置文件中<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">-G=/var/tmp/ntopng.pid</div><div class="line">-d=/storage/ntopng</div><div class="line">-i=tcp://127.0.0.1:5556</div><div class="line">-p=/etc/ntopng/protos</div><div class="line">-F=es;ntopng;ntopng-%Y.%m.%d;http://169.24.2.96:9200/_bulk</div></pre></td></tr></table></figure></p>
-<p>配置文件中指定了pid文件位置，存储地点，需要采集的zmq队列接口，ndpi协议文件位置以及elasticsearch参数。<br>其中，比较主要的是ndpi协议文件，我们通过该文件进行协议自定义。</p>
-<p>格式是 [tcp|udp]:端口号@自定义协议名。</p>
-<p>我们的示例文件内容如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">tcp:42966@HP-RGS</div><div class="line">tcp:49152-49157@vmware-tools</div><div class="line">udp:4172@vmware-view</div></pre></td></tr></table></figure></p>
-<h3 id="历史信息统计"><a href="#历史信息统计" class="headerlink" title="历史信息统计"></a>历史信息统计</h3><p>标准安装后，ntopng显示的是实时信息。官方提供两种方式来进行历史数据统计。</p>
-<ul>
-<li>安装mysql数据库</li>
-<li>使用elasticsearch</li>
-</ul>
-<p>目前我配置的是elasticsearch，但是并没有做具体的字段优化。我还没有试验本地mysql的效果如何。<br>另外，elasticsearch提供一个packetbeat的数据包统计方案，我也没试过这两种方案的对比。</p>
-<h3 id="交换机上的sflow协议配置"><a href="#交换机上的sflow协议配置" class="headerlink" title="交换机上的sflow协议配置"></a>交换机上的sflow协议配置</h3><p>我们使用的h3c交换机主要通过rmon,netstream,sflow三种协议实现流量采集。rmon是对snmp的增强，主要实现的是流量报警。netstream,sflow实现的是对报文的采样和统计。因为是采样分析，所以并不占用多少带宽而且性能也很不错。但是因为缺少了信息，采集精度上会打折扣。如果想要更大的精度可以再添加一个抓包模式的nprobe。</p>
-<p>sflow配置样例:</p>
-<p>配置sflow collector地址：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sflow collector 1 ip 169.24.2.200 description ntop</div></pre></td></tr></table></figure></p>
-<p>配置监控端口：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">interface GigabitEthernet7/0/10</div><div class="line"> port link-mode bridge</div><div class="line"> description dell</div><div class="line"> port link-type trunk</div><div class="line"> port trunk permit vlan all</div><div class="line"> broadcast-suppression 1</div><div class="line"> sflow flow collector 1      #采集器编号</div><div class="line"> sflow sampling-rate 4000    #采样频率，这里是1/4000.即每4000个包采一个</div><div class="line"> sflow counter collector 1   #计数采集器编号</div><div class="line"> sflow counter interval 120  #采集周期120秒</div></pre></td></tr></table></figure></p>
-<h3 id="其他问题"><a href="#其他问题" class="headerlink" title="其他问题"></a>其他问题</h3><p>ntopng只针对tcp,ip的流量、协议的分布进行统计。并没有细致到tcp的具体参数，比如包大小分布统计、tcp往返周期统计等等。好在这些需求并不常见。如果有这种需求，还得用wireshark</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -2012,7 +2012,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">13</span>
+                <span class="site-state-item-count">15</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
