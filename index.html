@@ -444,10 +444,10 @@
 <p>在software中放置一个单独的文件，写一个MainParser的子类.</p>
 <p>在这个子类中，需要实现：</p>
 <ul>
-<li>定义__software__,以及__version__类变量。注册插件信息</li>
+<li>定义__software<strong>,以及__version</strong>类变量。注册插件信息</li>
 <li>实现add_parser类方法，提供子命令的入口给mainparser回调</li>
 <li>实现handle类方法，提供给mainparser回调</li>
-<li>最后通过修改sotware/_<em>init\</em>_.py将新的代码引入即可</li>
+<li>最后通过修改sotware/__init__.py将新的代码引入即可</li>
 </ul>
 <p>如果觉得每次都要import一下新的代码很烦，可以定制import的过程做自动加载，但是目前来看，并没有多少必要来做这个事，还是从简的好。</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过使用python元编程，我们往往可以使用极少的代码就可以实现比较复杂的设计模式。这也python是让人非常上瘾的一点。</p>
